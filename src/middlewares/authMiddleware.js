@@ -1,4 +1,6 @@
 const jwt = require("jsonwebtoken");
+const db = require("../../models");
+const sequelize = db.sequelize;
 
 module.exports = async (req, res, next) => {
   try {
@@ -11,12 +13,25 @@ module.exports = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    req.user = decoded; // { userId, role }
+
+    const [session] = await sequelize.query(
+      `SELECT * FROM user_sessions 
+       WHERE user_id = :userId AND access_token = :token`,
+      {
+        replacements: {
+          userId: decoded.userId,
+          token,
+        },
+      }
+    );
+
+    if (!session.length) {
+      return res.status(401).json({ message: "Session expired or logged out" });
+    }
+
+    req.user = decoded; // { userId, roleId }
     next();
   } catch (err) {
-    if (err.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token expired" });
-    }
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 };

@@ -76,8 +76,6 @@ exports.createBooking = async (req, res) => {
       quantity,
       total_price,
       payment_method: "COD",
-      work_status: 0, // NEW booking
-      work_status_code: "NEW",
     });
 
     // Include Service, SubService, and User details
@@ -410,104 +408,6 @@ exports.getBookingsByTechnicianId = async (req, res) => {
   }
 };
 
-
-// GET available bookings for a technician (matches their techCategory with service_code)
-// This shows unassigned bookings + bookings already assigned to this technician
-exports.getAvailableBookingsForTechnician = async (req, res) => {
-  try {
-    const { technician_id } = req.params;
-
-    if (!technician_id) {
-      return res.status(400).json({ message: "technician_id is required" });
-    }
-
-    // First, get the technician's techCategory
-    const technician = await Technician.findOne({
-      where: { userId: technician_id },
-    });
-
-    if (!technician) {
-      return res.status(404).json({ message: "Technician not found" });
-    }
-
-    const techCategory = technician.techCategory;
-
-    // Get bookings that either:
-    // 1. Are unassigned AND match the technician's service category
-    // 2. Are already assigned to this technician
-    const { Op } = require("sequelize");
-    
-    const bookings = await ServiceOnBooking.findAll({
-      where: {
-        [Op.or]: [
-          // Unassigned bookings matching technician's category
-          {
-            technician_allocated: false,
-            service_code: techCategory,
-          },
-          // Bookings already assigned to this technician
-          {
-            technician_allocated: true,
-            technician_id: technician.userId, // Using userId which is the User.id
-          },
-        ],
-      },
-      include: [
-        { model: Service, as: "service" },
-        { model: SubService, as: "subservice" },
-        {
-          model: User,
-          attributes: ["id", "username", "email", "name", "mobile", "address"],
-        },
-        {
-          model: Technician,
-          as: "technician",
-          required: false,
-          include: [
-            {
-              model: User,
-              as: "user",
-              attributes: ["id", "name", "email", "mobile", "address", "username", "roleId"],
-            },
-          ],
-        },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
-
-    // Format response
-    const formattedBookings = bookings.map((b) => {
-      const booking = b.toJSON();
-
-      if (booking.technician && booking.technician.user) {
-        const user = booking.technician.user;
-        booking.technician = {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          mobile: user.mobile,
-          technicianDetails: {
-            skill: booking.technician.skill,
-            experience: booking.technician.experience,
-            techCategory: booking.technician.techCategory,
-          },
-        };
-        booking.technician_id = user.id;
-      }
-
-      return attachBookingImage(req, booking);
-    });
-
-    res.status(200).json({
-      message: "Available bookings fetched successfully",
-      techCategory: techCategory,
-      bookings: formattedBookings,
-    });
-  } catch (err) {
-    console.error("GET AVAILABLE BOOKINGS FOR TECHNICIAN ERROR →", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
 
 // GET booking by order_id (SAME RESPONSE AS getAllBookings)
@@ -927,53 +827,5 @@ exports.updateWorkStatus = async (req, res) => {
 };
 
 
-// ADMIN: Assign technician to booking
-exports.assignTechnician = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { technician_id } = req.body;
-
-    if (!technician_id) {
-      return res.status(400).json({ message: "technician_id is required" });
-    }
-
-    // Find booking by ID
-    const booking = await ServiceOnBooking.findByPk(id);
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    // Find technician by user ID
-    const technician = await Technician.findOne({ where: { userId: technician_id } });
-    if (!technician) {
-      return res.status(404).json({ message: "Technician not found" });
-    }
-
-    // Check if technician is approved
-    if (technician.status !== "ACCEPT") {
-      return res.status(400).json({ message: "Technician is not approved" });
-    }
-
-    // Assign technician
-    booking.technician_id = technician.id;
-    booking.technician_allocated = true;
-    booking.work_status = 1; // Set to Pending (assigned, waiting for technician)
-    booking.work_status_code = "PENDING";
-    await booking.save();
-
-    res.status(200).json({
-      message: "Technician assigned successfully",
-      booking: {
-        id: booking.id,
-        order_id: booking.order_id,
-        technician_id: technician.id,
-        work_status: booking.work_status,
-      },
-    });
-  } catch (err) {
-    console.error("ASSIGN TECHNICIAN ERROR →", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
 

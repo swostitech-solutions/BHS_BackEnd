@@ -1,17 +1,23 @@
+const jwt = require("jsonwebtoken");
+const { generateAccessToken, generateRefreshToken } = require("../../utils/token");
 const bcrypt = require("bcrypt");
 const db = require("../../../models");
 const User = db.User;
 const Technician = db.Technician;
 const sequelize = db.sequelize;
-const { generateAccessToken, generateRefreshToken } = require("../../utils/token");
-
 
 const getBaseUrl = (req) => `${req.protocol}://${req.get("host")}`;
 
+// const withBaseUrl = (req, path) => {
+//   if (!path) return null;
+//   if (path.startsWith("http")) return path; // safety
+//   return `${getBaseUrl(req)}${path}`;
+// };
+
 const withBaseUrl = (req, path) => {
   if (!path) return null;
-  if (path.startsWith("http")) return path; // safety
-  return `${getBaseUrl(req)}${path}`;
+  if (path.startsWith("http")) return path;
+  return `${req.protocol}://${req.get("host")}${path}`;
 };
 
 
@@ -30,7 +36,6 @@ const getRoleName = (roleId) => {
       return "Unknown";
   }
 };
-
 
 const ensureDefaultAdmin = async () => {
   try {
@@ -58,7 +63,6 @@ const ensureDefaultAdmin = async () => {
     throw err;
   }
 };
-
 
 /* -------- Client Signup -------- */
 exports.signupClient = async (req, res) => {
@@ -91,9 +95,6 @@ exports.signupClient = async (req, res) => {
   }
 };
 
-
-
-
 ///// client Update /////
 exports.updateClientProfile = async (req, res) => {
   try {
@@ -118,9 +119,10 @@ exports.updateClientProfile = async (req, res) => {
     }
 
     /* ---------------- PROFILE IMAGE ---------------- */
-    const profileImage = req.file
-      ? `/uploads/clients/${req.file.filename}`
-      : user.profileImage;
+    // const profileImage = req.file
+    //   ? `/uploads/clients/${req.file.filename}`
+    //   : user.profileImage;
+    const profileImage = req.file?.path || user.profileImage;
 
     /* ---------------- UPDATE USER ---------------- */
     await user.update({
@@ -151,19 +153,6 @@ exports.updateClientProfile = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* -------- Technician Signup -------- */
 exports.signupTechnician = async (req, res) => {
   try {
@@ -187,10 +176,8 @@ exports.signupTechnician = async (req, res) => {
     } = req.body;
 
     // ✅ Required field check
-    if (!name || !username || !password || !skill || !experience || !techCategory) {
-      return res.status(400).json({ 
-        message: "Missing required fields. Please provide name, username, password, skill, experience, and service category." 
-      });
+    if (!name || !username || !password || !skill || !experience) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
     // ✅ Check if username already exists
@@ -214,10 +201,13 @@ exports.signupTechnician = async (req, res) => {
 
     // ✅ Helper to get relative file paths
     const files = req.files || {};
-    const getFilePath = (field) =>
-      files[field]?.[0]
-        ? `/uploads/technicians/${files[field][0].filename}`
-        : null;
+    // const getFilePath = (field) =>
+    //   files[field]?.[0]
+    //     ? `/uploads/technicians/${files[field][0].filename}`
+    //     : null;
+
+    const getFilePath = (field) => files[field]?.[0]?.path || null;
+
 
     // ✅ Create technician
     const technician = await Technician.create({
@@ -275,13 +265,6 @@ exports.signupTechnician = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
 //// Technician Update //////
 exports.updateTechnicianProfile = async (req, res) => {
   try {
@@ -318,10 +301,12 @@ exports.updateTechnicianProfile = async (req, res) => {
 
     /* ---------------- FILES ---------------- */
     const files = req.files || {};
-    const getFilePath = (field) =>
-      files[field]?.[0]
-        ? `/uploads/technicians/${files[field][0].filename}`
-        : undefined;
+    // const getFilePath = (field) =>
+    //   files[field]?.[0]
+    //     ? `/uploads/technicians/${files[field][0].filename}`
+    //     : undefined;
+    const getFilePath = (field) => files[field]?.[0]?.path || null;
+
 
     /* ---------------- UPDATE USER ---------------- */
     await user.update({
@@ -363,12 +348,6 @@ exports.updateTechnicianProfile = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
 /* -------- Login (Common for Admin / Client / Technician) -------- */
 exports.login = async (req, res) => {
   try {
@@ -386,105 +365,179 @@ exports.login = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const tech = user.technician;
 
-    // Allow pending technicians to login but flag their status
-    const isPendingTechnician = user.roleId === 3 && tech?.status === "PENDING";
-    const isRejectedTechnician = user.roleId === 3 && tech?.status === "REJECT";
-
-    // Block rejected technicians
-    if (isRejectedTechnician) {
+    if (user.roleId === 3 && tech?.status === "PENDING") {
       return res.status(403).json({
-        message: "Your technician application has been rejected. Please contact support.",
+        message: "Technician account is pending approval",
         status: tech.status,
       });
     }
 
-    const responseUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      address: user.address,
-      username: user.username,
-      roleId: user.roleId,
-      roleName: getRoleName(user.roleId),
-      profileImage: withBaseUrl(req, user.profileImage),
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-      technicianDetails:
-        user.roleId === 3 && tech
-          ? {
-              skill: tech.skill ?? null,
-              experience: tech.experience ?? null,
-              aadharCardNo: tech.aadharCardNo ?? null,
-              panCardNo: tech.panCardNo ?? null,
-              bankName: tech.bankName ?? null,
-              ifscNo: tech.ifscNo ?? null,
-              branchName: tech.branchName ?? null,
-              status: tech.status ?? "PENDING",
-              timeDuration: tech.timeDuration ?? null,
-              emergencyAvailable: tech.emergencyAvailable ?? false,
-              techCategory: tech.techCategory ?? null,
-
-              // ✅ FULL URLs
-              profileImage: withBaseUrl(req, tech.profileImage),
-              aadharDoc: withBaseUrl(req, tech.aadharDoc),
-              panDoc: withBaseUrl(req, tech.panDoc),
-              bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
-              experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
-
-              rating: {
-                avg_rating: tech.avg_rating ?? "0.0",
-                rating_count: tech.rating_count ?? 0,
-              },
-            }
-          : null,
-    };
-
-    // Generate tokens
-    const accessToken = generateAccessToken({ id: user.id, role: user.roleId });
-    const refreshToken = generateRefreshToken({ id: user.id });
-
-    // Create or update user session
-    await sequelize.query(
-      `INSERT INTO user_sessions (user_id, role_id, access_token, refresh_token, created_at, updated_at)
-       VALUES (:userId, :roleId, :accessToken, :refreshToken, NOW(), NOW())
-       ON CONFLICT (user_id) 
-       DO UPDATE SET access_token = :accessToken, refresh_token = :refreshToken, updated_at = NOW()`,
-      {
-        replacements: {
-          userId: user.id,
-          roleId: user.roleId,
-          accessToken,
-          refreshToken,
-        },
-      }
-    );
-
-    res.json({ 
-      message: "Login successful", 
-      user: responseUser,
+    return res.json({
+      message: "Login successful",
       accessToken,
       refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        address: user.address,
+        username: user.username,
+        roleId: user.roleId,
+        roleName: getRoleName(user.roleId),
+        profileImage: withBaseUrl(req, user.profileImage),
+
+        // ✅ SAFE technician object
+        technicianDetails:
+          user.roleId === 3 && tech
+            ? {
+                skill: tech.skill,
+                experience: tech.experience,
+                status: tech.status,
+                techCategory: tech.techCategory,
+
+                profileImage: withBaseUrl(req, tech.profileImage),
+                aadharDoc: withBaseUrl(req, tech.aadharDoc),
+                panDoc: withBaseUrl(req, tech.panDoc),
+                bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+                experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+              }
+            : null,
+      },
     });
   } catch (err) {
     console.error("LOGIN ERROR →", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
 
+///// without token Login /////
+
+// exports.login = async (req, res) => {
+//   try {
+//     const { username, password } = req.body;
+
+//     if (!username || !password) {
+//       return res
+//         .status(400)
+//         .json({ message: "Username and password are required" });
+//     }
+
+//     const user = await User.findOne({
+//       where: { username },
+//       include: [{ model: Technician, as: "technician", required: false }],
+//     });
+
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const match = await bcrypt.compare(password, user.password);
+//     if (!match) {
+//       return res.status(401).json({ message: "Invalid credentials" });
+//     }
+
+//     const tech = user.technician;
+
+//     if (user.roleId === 3 && tech?.status === "PENDING") {
+//       return res.status(403).json({
+//         message: "Technician account is pending approval",
+//         status: tech.status,
+//       });
+//     }
+
+//     const responseUser = {
+//       id: user.id,
+//       name: user.name,
+//       email: user.email,
+//       mobile: user.mobile,
+//       address: user.address,
+//       username: user.username,
+//       roleId: user.roleId,
+//       roleName: getRoleName(user.roleId),
+//       profileImage: withBaseUrl(req, user.profileImage),
+
+//       technicianDetails:
+//         user.roleId === 3 && tech
+//           ? {
+//               skill: tech.skill ?? null,
+//               experience: tech.experience ?? null,
+//               aadharCardNo: tech.aadharCardNo ?? null,
+//               panCardNo: tech.panCardNo ?? null,
+//               bankName: tech.bankName ?? null,
+//               ifscNo: tech.ifscNo ?? null,
+//               branchName: tech.branchName ?? null,
+//               status: tech.status ?? "PENDING",
+//               timeDuration: tech.timeDuration ?? null,
+//               emergencyAvailable: tech.emergencyAvailable ?? false,
+//               techCategory: tech.techCategory ?? null,
+
+//               // ✅ FULL URLs
+//               profileImage: withBaseUrl(req, tech.profileImage),
+//               aadharDoc: withBaseUrl(req, tech.aadharDoc),
+//               panDoc: withBaseUrl(req, tech.panDoc),
+//               bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+//               experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+
+//               rating: {
+//                 avg_rating: tech.avg_rating ?? "0.0",
+//                 rating_count: tech.rating_count ?? 0,
+//               },
+//             }
+//           : null,
+//     };
+
+//     res.json({ message: "Login successful", user: responseUser });
+//   } catch (err) {
+//     console.error("LOGIN ERROR →", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 
 
 /* -------- Logout (Stateless) -------- */
+// exports.logout = async (req, res) => {
+//   try {
+//     const authHeader = req.headers.authorization;
+
+//     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+//       return res.status(401).json({ message: "Access token required" });
+//     }
+
+//     const token = authHeader.split(" ")[1];
+
+//     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+//     await sequelize.query(`DELETE FROM user_sessions WHERE user_id = :userId`, {
+//       replacements: { userId: decoded.userId },
+//     });
+
+//     return res.json({ message: "Logout successful" });
+//   } catch (err) {
+//     console.error("LOGOUT ERROR →", err);
+//     return res.status(401).json({ message: "Invalid or expired token" });
+//   }
+// };
+
+
+
+
+
 exports.logout = async (req, res) => {
   try {
     const { userId } = req.body ?? {};
@@ -503,9 +556,6 @@ exports.logout = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
-
 
 /* -------- Get All Users (Admin Included) -------- */
 exports.getAllUsers = async (req, res) => {
@@ -573,11 +623,6 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-
-
-
-
-
 /**
  * @desc Admin approves or rejects a technician
  * @route PATCH /api/auth/technician/:id/status
@@ -585,11 +630,6 @@ exports.getAllUsers = async (req, res) => {
  */
 exports.updateTechnicianStatus = async (req, res) => {
   try {
-    // Check if user is admin (roleId = 1)
-    if (req.user?.role !== 1) {
-      return res.status(403).json({ message: "Access denied. Admin only." });
-    }
-
     const { id } = req.params; // userId of technician
     const { status } = req.body; // APPROVE / REJECT
 
@@ -634,10 +674,6 @@ exports.updateTechnicianStatus = async (req, res) => {
     return res.status(500).json({ message: err.message || "Server error" });
   }
 };
-
-
-
-
 
 /* -------- Get Single User by ID -------- */
 
@@ -701,12 +737,6 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
 /* -------- Get User by ID and Role (User-only) -------- */
 exports.getUserByRole = async (req, res) => {
   try {
@@ -722,7 +752,9 @@ exports.getUserByRole = async (req, res) => {
 
     const user = await User.findOne({ where: { id, roleId } });
     if (!user) {
-      return res.status(404).json({ message: "User not found with the given role" });
+      return res
+        .status(404)
+        .json({ message: "User not found with the given role" });
     }
 
     // Only user data, no technician details
@@ -747,9 +779,6 @@ exports.getUserByRole = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
-
-
 
 /* -------- Get Technician by technicianId and roleId -------- */
 

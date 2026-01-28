@@ -148,34 +148,6 @@ router.get(
 );
 
 
-/**
- * @swagger
- * /service-on-booking/technician/{technician_id}/available:
- *   get:
- *     summary: Get available bookings for a technician (matching their service category)
- *     tags: [ServiceOnBooking]
- *     parameters:
- *       - in: path
- *         name: technician_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: User ID of the technician
- *     responses:
- *       200:
- *         description: Available bookings fetched successfully
- *       400:
- *         description: Validation error
- *       404:
- *         description: Technician not found
- *       500:
- *         description: Server error
- */
-router.get(
-  "/technician/:technician_id/available",
-  controller.getAvailableBookingsForTechnician
-);
-
 
 
 
@@ -312,43 +284,6 @@ router.post(
   controller.updateWorkStatus
 );
 
-/**
- * @swagger
- * /api/service-on-booking/{id}/assign:
- *   patch:
- *     summary: Admin assigns a technician to a booking
- *     tags: [ServiceOnBooking]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Booking ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - technician_id
- *             properties:
- *               technician_id:
- *                 type: integer
- *                 example: 15
- *                 description: User ID of the technician to assign
- *     responses:
- *       200:
- *         description: Technician assigned successfully
- *       400:
- *         description: Validation error
- *       404:
- *         description: Booking or technician not found
- *       500:
- *         description: Server error
- */
-router.patch("/:id/assign", controller.assignTechnician);
 
 
 module.exports = router;

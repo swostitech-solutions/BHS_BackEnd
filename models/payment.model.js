@@ -1,36 +1,18 @@
-// module.exports = (sequelize, DataTypes) => {
-//   return sequelize.define(
-//     "Payment",
-//     {
-//       amount: DataTypes.DECIMAL,
-//       status: {
-//         type: DataTypes.ENUM("PAID", "HOLD", "RELEASED"),
-//         defaultValue: "PAID",
-//       },
-//     },
-//     {
-//       tableName: "payments",
-//       timestamps: true,
-//     }
-//   );
-// };
-
-
 
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define(
+  const Payment = sequelize.define(
     "Payment",
     {
-      transaction_id: {
-        type: DataTypes.STRING,
-        unique: true,
+      booking_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
       },
 
-      // BUSINESS ORDER ID – STRING
-      order_id: {
+      // Business order reference (BD100034)
+      order_code: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
+        unique: true,
       },
 
       amount: {
@@ -38,26 +20,17 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-      currency: {
-        type: DataTypes.STRING,
-        defaultValue: "INR",
+      customer_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
       },
 
       status: {
-        type: DataTypes.ENUM("PENDING", "SUCCESS", "FAILED", "CANCELLED"),
-        defaultValue: "PENDING",
+        type: DataTypes.ENUM("INITIATED", "SUCCESS", "FAILED"),
+        defaultValue: "INITIATED",
       },
 
-      billing_name: DataTypes.STRING,
-      billing_email: DataTypes.STRING,
-      billing_phone: DataTypes.STRING,
-      billing_address: DataTypes.TEXT,
-
-      tracking_id: DataTypes.STRING,
-      bank_ref_no: DataTypes.STRING,
-      payment_mode: DataTypes.STRING,
-      card_name: DataTypes.STRING,
-
+      gateway_order_id: DataTypes.STRING,
       response_code: DataTypes.STRING,
       response_message: DataTypes.TEXT,
       gateway_response: DataTypes.JSON,
@@ -70,4 +43,6 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
     }
   );
+
+  return Payment;
 };

@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // For HDFC payment gateway callbacks
 
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://localhost:4000", "https://bhsfrontend2026.vercel.app"],
+  origin: ["http://localhost:3000", "https://bhsfrontend2026.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -21,7 +21,12 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// SWAGGER DOCS - Must be before API routes
+
+app.use("/api", routes);
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// JUSPAY ROUTES
+app.use("/api/payment/juspay", juspayRoutes);
+
 const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
@@ -46,17 +51,23 @@ const swaggerOptions = {
         },
       },
     },
-    security: [{ BearerAuth: [] }],
+
+    // 🔐 APPLY TOKEN TO ALL APIs
+    security: [
+      {
+        BearerAuth: [],
+      },
+    ],
   },
   apis: ["./src/modules/**/*.js", "./payments/**/*.js"],
 };
 
+
+
+
 const swaggerSpec = swaggerJsDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// API ROUTES
-app.use("/api", routes);
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-app.use("/api/payment/juspay", juspayRoutes);
+
 
 module.exports = app;

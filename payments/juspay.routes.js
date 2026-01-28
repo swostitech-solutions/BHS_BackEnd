@@ -195,8 +195,7 @@ router.post("/initiate", async (req, res) => {
       quantity,
       total_price: amount,
       payment_method: "ONLINE",
-      work_status: 0, // NEW booking
-      work_status_code: "PAYMENT_PENDING",
+      payment_status: "INITIATED",
     });
 
     // ===================================================
