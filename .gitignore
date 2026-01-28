@@ -1,0 +1,61 @@
+# =========================
+# Node modules
+# =========================
+node_modules/
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.local
+.env.development
+.env.production
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# OS generated files
+# =========================
+.DS_Store
+Thumbs.db
+__MACOSX/
+
+# =========================
+# Uploads (user files)
+# =========================
+uploads/
+
+# =========================
+# Build / cache folders
+# =========================
+dist/
+build/
+.cache/
+
+# =========================
+# IDE / Editor folders
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Sequelize / DB related
+# =========================
+config/config.json
+
+# =========================
+# Backup & temp files
+# =========================
+*.bak
+*.tmp
+
+
+
+
