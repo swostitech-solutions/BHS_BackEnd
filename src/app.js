@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true })); // For HDFC payment gateway cal
 const corsOptions = {
   origin: [
     "http://localhost:3000",
-    "https://bhsfrontendlatestcode.vercel.app",
+    "https://bhsfrontendlatestcodelatest.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
