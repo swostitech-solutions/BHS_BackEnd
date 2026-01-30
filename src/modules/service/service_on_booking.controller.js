@@ -100,8 +100,10 @@ exports.createBooking = async (req, res) => {
   }
 };
 
-// GET all bookings with service, subservice & user details
 
+
+
+// GET all bookings with service, subservice & user details
 exports.getAllBookings = async (req, res) => {
   try {
     const bookings = await ServiceOnBooking.findAll({
@@ -627,7 +629,6 @@ exports.getBookingsByServiceCode = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 
 

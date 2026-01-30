@@ -220,9 +220,21 @@ router.post("/initiate", async (req, res) => {
     // ===================================================
     // 3️⃣ JUSPAY CALL
     // ===================================================
+    // const amountInPaise = Math.round(Number(amount) * 100); // added 
+    // const juspayResponse = await juspay.order.create({
+    //   order_id: order_id, // BD100025
+    //   // amount: amount * 100,
+    //   amount: amountInPaise, //added
+    //   currency: "INR",
+    //   customer_id: String(customerId),
+    //   customer_email: email,
+    //   customer_phone: mobile,
+    //   return_url: `${process.env.BASE_URL}/api/payment/juspay/verify?order_id=${order_id}`,
+    // });
+
     const juspayResponse = await juspay.order.create({
-      order_id: order_id, // BD100025
-      amount: amount * 100,
+      order_id: order_id, // BD100005
+      amount: Number(amount).toFixed(2), // ✅ RUPEES, not paise
       currency: "INR",
       customer_id: String(customerId),
       customer_email: email,
