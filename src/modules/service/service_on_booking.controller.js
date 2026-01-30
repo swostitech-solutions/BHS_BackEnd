@@ -521,6 +521,117 @@ exports.getBookingByOrderId = async (req, res) => {
 
 
 
+// GET bookings by service_code
+exports.getBookingsByServiceCode = async (req, res) => {
+  try {
+    const { service_code } = req.params;
+
+    if (!service_code) {
+      return res.status(400).json({ message: "service_code is required" });
+    }
+
+    const bookings = await ServiceOnBooking.findAll({
+      where: { service_code },
+      include: [
+        { model: Service, as: "service" },
+        { model: SubService, as: "subservice" },
+        {
+          model: User,
+          attributes: ["id", "username", "email", "name", "mobile", "address"],
+        },
+        {
+          model: Technician,
+          as: "technician",
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: [
+                "id",
+                "name",
+                "email",
+                "mobile",
+                "address",
+                "username",
+                "roleId",
+              ],
+            },
+          ],
+          attributes: [
+            "skill",
+            "experience",
+            "status",
+            "aadharCardNo",
+            "panCardNo",
+            "bankName",
+            "ifscNo",
+            "branchName",
+            "timeDuration",
+            "emergencyAvailable",
+            "techCategory",
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (!bookings.length) {
+      return res.status(404).json({
+        message: "No bookings found for this service_code",
+      });
+    }
+
+    // 🔥 SAME FORMATTER LOGIC
+    const formattedBookings = bookings.map((b) => {
+      const booking = b.toJSON();
+
+      if (booking.technician && booking.technician.user) {
+        const user = booking.technician.user;
+
+        booking.technician = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          mobile: user.mobile,
+          address: user.address,
+          username: user.username,
+          roleId: user.roleId,
+          roleName: "Technician",
+          technicianDetails: {
+            skill: booking.technician.skill,
+            experience: booking.technician.experience,
+            status: booking.technician.status,
+            aadharCardNo: booking.technician.aadharCardNo,
+            panCardNo: booking.technician.panCardNo,
+            bankName: booking.technician.bankName,
+            ifscNo: booking.technician.ifscNo,
+            branchName: booking.technician.branchName,
+            timeDuration: booking.technician.timeDuration,
+            emergencyAvailable: booking.technician.emergencyAvailable,
+            techCategory: booking.technician.techCategory,
+          },
+        };
+
+        booking.technician_id = user.id;
+      }
+
+      return attachBookingImage(req, booking);
+    });
+
+    res.status(200).json({
+      message: "Bookings fetched successfully",
+      bookings: formattedBookings,
+    });
+  } catch (err) {
+    console.error("GET BOOKINGS BY SERVICE CODE ERROR →", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+
+
 //accept Booking 
 exports.acceptBooking = async (req, res) => {
   try {

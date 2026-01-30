@@ -177,6 +177,35 @@ router.get("/:order_id", controller.getBookingByOrderId);
 
 
 
+/**
+ * @swagger
+ * /service-on-booking/service/{service_code}:
+ *   get:
+ *     summary: Get bookings by service code
+ *     tags: [ServiceOnBooking]
+ *     parameters:
+ *       - in: path
+ *         name: service_code
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Service code (e.g. S10001)
+ *     responses:
+ *       200:
+ *         description: Bookings fetched successfully
+ *       404:
+ *         description: No bookings found
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/service/:service_code",
+  controller.getBookingsByServiceCode
+);
+
+
+
+
 
 /**
  * @swagger
