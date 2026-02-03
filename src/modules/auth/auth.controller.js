@@ -199,14 +199,21 @@ exports.signupTechnician = async (req, res) => {
       roleId,
     });
 
-    // ✅ Helper to get relative file paths
+    // ✅ Helper to get file paths (works with both Cloudinary and local storage)
     const files = req.files || {};
-    // const getFilePath = (field) =>
-    //   files[field]?.[0]
-    //     ? `/uploads/technicians/${files[field][0].filename}`
-    //     : null;
-
-    const getFilePath = (field) => files[field]?.[0]?.path || null;
+    const getFilePath = (field) => {
+      const file = files[field]?.[0];
+      if (!file) return null;
+      // If path is already a URL (Cloudinary), return as-is
+      if (file.path && file.path.startsWith("http")) {
+        return file.path;
+      }
+      // For local storage, return relative path
+      if (file.filename) {
+        return `/uploads/technicians/${file.filename}`;
+      }
+      return file.path || null;
+    };
 
 
     // ✅ Create technician
@@ -404,17 +411,17 @@ exports.login = async (req, res) => {
         technicianDetails:
           user.roleId === 3 && tech
             ? {
-                skill: tech.skill,
-                experience: tech.experience,
-                status: tech.status,
-                techCategory: tech.techCategory,
+              skill: tech.skill,
+              experience: tech.experience,
+              status: tech.status,
+              techCategory: tech.techCategory,
 
-                profileImage: withBaseUrl(req, tech.profileImage),
-                aadharDoc: withBaseUrl(req, tech.aadharDoc),
-                panDoc: withBaseUrl(req, tech.panDoc),
-                bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
-                experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
-              }
+              profileImage: withBaseUrl(req, tech.profileImage),
+              aadharDoc: withBaseUrl(req, tech.aadharDoc),
+              panDoc: withBaseUrl(req, tech.panDoc),
+              bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+              experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+            }
             : null,
       },
     });
@@ -585,29 +592,29 @@ exports.getAllUsers = async (req, res) => {
         technician:
           user.roleId === 3 && tech
             ? {
-                skill: tech.skill ?? null,
-                experience: tech.experience ?? null,
-                aadharCardNo: tech.aadharCardNo ?? null,
-                panCardNo: tech.panCardNo ?? null,
-                bankName: tech.bankName ?? null,
-                ifscNo: tech.ifscNo ?? null,
-                branchName: tech.branchName ?? null,
-                status: tech.status ?? "PENDING",
-                timeDuration: tech.timeDuration ?? null,
-                emergencyAvailable: tech.emergencyAvailable ?? false,
-                techCategory: tech.techCategory ?? null,
+              skill: tech.skill ?? null,
+              experience: tech.experience ?? null,
+              aadharCardNo: tech.aadharCardNo ?? null,
+              panCardNo: tech.panCardNo ?? null,
+              bankName: tech.bankName ?? null,
+              ifscNo: tech.ifscNo ?? null,
+              branchName: tech.branchName ?? null,
+              status: tech.status ?? "PENDING",
+              timeDuration: tech.timeDuration ?? null,
+              emergencyAvailable: tech.emergencyAvailable ?? false,
+              techCategory: tech.techCategory ?? null,
 
-                profileImage: withBaseUrl(req, tech.profileImage),
-                aadharDoc: withBaseUrl(req, tech.aadharDoc),
-                panDoc: withBaseUrl(req, tech.panDoc),
-                bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
-                experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+              profileImage: withBaseUrl(req, tech.profileImage),
+              aadharDoc: withBaseUrl(req, tech.aadharDoc),
+              panDoc: withBaseUrl(req, tech.panDoc),
+              bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+              experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
 
-                rating: {
-                  avg_rating: tech.avg_rating ?? "0.0",
-                  rating_count: tech.rating_count ?? 0,
-                },
-              }
+              rating: {
+                avg_rating: tech.avg_rating ?? "0.0",
+                rating_count: tech.rating_count ?? 0,
+              },
+            }
             : null,
       };
     });
@@ -703,30 +710,30 @@ exports.getUserById = async (req, res) => {
       technicianDetails:
         user.roleId === 3 && tech
           ? {
-              skill: tech.skill ?? null,
-              experience: tech.experience ?? null,
-              aadharCardNo: tech.aadharCardNo ?? null,
-              panCardNo: tech.panCardNo ?? null,
-              bankName: tech.bankName ?? null,
-              ifscNo: tech.ifscNo ?? null,
-              branchName: tech.branchName ?? null,
-              status: tech.status ?? "PENDING",
-              timeDuration: tech.timeDuration ?? null,
-              emergencyAvailable: tech.emergencyAvailable ?? false,
-              techCategory: tech.techCategory ?? null,
+            skill: tech.skill ?? null,
+            experience: tech.experience ?? null,
+            aadharCardNo: tech.aadharCardNo ?? null,
+            panCardNo: tech.panCardNo ?? null,
+            bankName: tech.bankName ?? null,
+            ifscNo: tech.ifscNo ?? null,
+            branchName: tech.branchName ?? null,
+            status: tech.status ?? "PENDING",
+            timeDuration: tech.timeDuration ?? null,
+            emergencyAvailable: tech.emergencyAvailable ?? false,
+            techCategory: tech.techCategory ?? null,
 
-              // ✅ FULL URLs
-              profileImage: withBaseUrl(req, tech.profileImage),
-              aadharDoc: withBaseUrl(req, tech.aadharDoc),
-              panDoc: withBaseUrl(req, tech.panDoc),
-              bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
-              experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+            // ✅ FULL URLs
+            profileImage: withBaseUrl(req, tech.profileImage),
+            aadharDoc: withBaseUrl(req, tech.aadharDoc),
+            panDoc: withBaseUrl(req, tech.panDoc),
+            bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+            experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
 
-              rating: {
-                avg_rating: tech.avg_rating ?? "0.0",
-                rating_count: tech.rating_count ?? 0,
-              },
-            }
+            rating: {
+              avg_rating: tech.avg_rating ?? "0.0",
+              rating_count: tech.rating_count ?? 0,
+            },
+          }
           : null,
     };
 
