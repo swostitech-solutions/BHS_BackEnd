@@ -6,6 +6,7 @@ const User = db.User;
 const Technician = db.Technician;
 const sequelize = db.sequelize;
 
+
 const getBaseUrl = (req) => `${req.protocol}://${req.get("host")}`;
 
 // const withBaseUrl = (req, path) => {

@@ -41,6 +41,17 @@ db.Feedback = require("../models/feedback.model")(
 );  
 db.PasswordReset = require("./passwordReset.model")(sequelize, Sequelize);
 
+db.TechnicianWallet = require("./technician_wallet.model")(
+  sequelize,
+  Sequelize
+);
+
+db.WalletTransaction = require("./wallet_transaction.model")(
+  sequelize,
+  Sequelize
+);
+
+
 /* ===================== RELATIONSHIPS ===================== */
 
 /* USER ↔ CART */
@@ -153,6 +164,27 @@ db.Feedback.belongsTo(db.Technician, {
 /* FORGOT PASSWORD */
 db.User.hasMany(db.PasswordReset, { foreignKey: "user_id" });
 db.PasswordReset.belongsTo(db.User, { foreignKey: "user_id" });
+
+
+
+
+
+// Technician Wallet - one-one rleationship
+/* TECHNICIAN ↔ WALLET */
+db.Technician.hasOne(db.TechnicianWallet, {
+  foreignKey: "technician_id",
+});
+db.TechnicianWallet.belongsTo(db.Technician, {
+  foreignKey: "technician_id",
+});
+
+/* WALLET ↔ WALLET TRANSACTIONS */
+db.TechnicianWallet.hasMany(db.WalletTransaction, {
+  foreignKey: "wallet_id",
+});
+db.WalletTransaction.belongsTo(db.TechnicianWallet, {
+  foreignKey: "wallet_id",
+});
 
 
 

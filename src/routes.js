@@ -36,6 +36,10 @@ router.use("/feedback", require("./modules/feedback/feedback.routes"));
 
 
 
+// --- Wallet Module ---
+router.use("/wallet", require("./modules/wallet/wallet.routes"));
+
+
 
 
 
