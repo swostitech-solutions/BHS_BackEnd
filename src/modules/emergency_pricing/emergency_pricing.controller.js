@@ -60,6 +60,118 @@ exports.getRules = async (_req, res) => {
   }
 };
 
+
+
+
+
+// Update rule (Full editable)
+exports.updateRule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      urgency_level,
+      label,
+      percentage_markup,
+      multiplier,
+      is_active,
+    } = req.body;
+
+    const rule = await EmergencyPricing.findByPk(id);
+
+    if (!rule) {
+      return res.status(404).json({
+        message: "Pricing rule not found",
+      });
+    }
+
+    // Validate numeric values if provided
+    if (percentage_markup !== undefined) {
+      const pct = Number(percentage_markup);
+      if (isNaN(pct)) {
+        return res.status(400).json({
+          message: "percentage_markup must be numeric",
+        });
+      }
+      rule.percentage_markup = pct;
+    }
+
+    if (multiplier !== undefined) {
+      const mult = Number(multiplier);
+      if (isNaN(mult)) {
+        return res.status(400).json({
+          message: "multiplier must be numeric",
+        });
+      }
+      rule.multiplier = mult;
+    }
+
+    // Update text fields if provided
+    if (urgency_level !== undefined) {
+      rule.urgency_level = urgency_level;
+    }
+
+    if (label !== undefined) {
+      rule.label = label;
+    }
+
+    if (is_active !== undefined) {
+      rule.is_active = Boolean(is_active);
+    }
+
+    await rule.save();
+
+    return res.status(200).json({
+      message: "Emergency pricing rule updated successfully",
+      rule,
+    });
+  } catch (err) {
+    console.error("UPDATE RULE ERROR →", err);
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message, // Added for debugging
+    });
+  }
+};
+
+
+
+
+
+
+
+
+// Delete rule (Soft delete)
+exports.deleteRule = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const rule = await EmergencyPricing.findByPk(id);
+
+    if (!rule) {
+      return res.status(404).json({ message: "Pricing rule not found" });
+    }
+
+    // Soft delete
+    rule.is_active = false;
+    await rule.save();
+
+    return res.json({
+      message: "Rule deactivated successfully",
+    });
+  } catch (err) {
+    console.error("DELETE RULE ERROR →", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+
+
+
+
+
+
 // Calculate emergency price for a SubService
 exports.calculateEmergencyPrice = async (req, res) => {
   try {

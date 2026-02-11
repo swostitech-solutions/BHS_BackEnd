@@ -40,6 +40,8 @@ router.use("/feedback", require("./modules/feedback/feedback.routes"));
 router.use("/wallet", require("./modules/wallet/wallet.routes"));
 
 
+// /// --- withdrawal Module ---
+// router.post("/withdraw", walletController.withdrawFromWallet);
 
 
 

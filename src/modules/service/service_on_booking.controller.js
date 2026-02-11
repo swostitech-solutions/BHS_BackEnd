@@ -4,6 +4,7 @@ const Service = db.Service;
 const SubService = db.SubService;
 const User = db.User;
 const Technician = db.Technician;
+const { deductCommission } = require("../wallet/wallet.service");
 
 // Generate order_id
 const generateOrderId = async () => {
@@ -940,4 +941,71 @@ exports.updateWorkStatus = async (req, res) => {
 
 
 
+
+
+
+
+//wallet deduction  
+
+// COMPLETE SERVICE & DEDUCT COMMISSION
+exports.completeServiceBooking = async (req, res) => {
+  try {
+    const { booking_id } = req.params;
+
+    const booking = await ServiceOnBooking.findByPk(booking_id, {
+      include: [
+        {
+          model: Technician,
+          as: "technician",
+        },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (!booking.technician) {
+      return res.status(400).json({
+        message: "No technician assigned to this booking",
+      });
+    }
+
+    if (booking.work_status !== 3) {
+      return res.status(400).json({
+        message: "Service is not marked as completed yet",
+      });
+    }
+
+    if (booking.commission_deducted) {
+      return res.status(400).json({
+        message: "Commission already deducted",
+      });
+    }
+
+    // 🔥 COMMISSION
+    const COMMISSION_PERCENT = 18;
+
+    const commissionResult = await deductCommission({
+      technicianId: booking.technician.userId, // USER ID
+      bookingId: booking.id,
+      jobAmount: booking.total_price,
+      commissionPercent: COMMISSION_PERCENT,
+    });
+
+    // ✅ lock commission
+    booking.commission_deducted = true;
+    await booking.save();
+
+    return res.json({
+      success: true,
+      message: "Service settled & commission deducted",
+      commission: commissionResult.commissionAmount,
+      walletBalance: commissionResult.remainingBalance,
+    });
+  } catch (error) {
+    console.error("COMPLETE SERVICE ERROR →", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 

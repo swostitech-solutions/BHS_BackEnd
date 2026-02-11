@@ -66,6 +66,92 @@ router.post("/", controller.createRule);
  */
 router.get("/", controller.getRules);
 
+
+
+/**
+ * @swagger
+ * /emergency-pricing/{id}:
+ *   put:
+ *     summary: Update an emergency pricing rule
+ *     description: Update any field of an existing emergency pricing rule. All fields are optional, but at least one must be provided.
+ *     tags: [Emergency Pricing]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID of the emergency pricing rule
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               urgency_level:
+ *                 type: string
+ *                 example: "super_emergency"
+ *               label:
+ *                 type: string
+ *                 example: "Super Emergency (15–30 mins)"
+ *               percentage_markup:
+ *                 type: number
+ *                 example: 60
+ *               multiplier:
+ *                 type: number
+ *                 example: 1.6
+ *               is_active:
+ *                 type: boolean
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Emergency pricing rule updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Emergency pricing rule updated successfully
+ *                 rule:
+ *                   type: object
+ *       400:
+ *         description: Validation error (invalid numeric values)
+ *       404:
+ *         description: Pricing rule not found
+ *       500:
+ *         description: Server error
+ */
+router.put("/:id", controller.updateRule);
+
+
+
+
+/**
+ * @swagger
+ * /emergency-pricing/{id}:
+ *   delete:
+ *     summary: Delete (deactivate) an emergency pricing rule
+ *     tags: [Emergency Pricing]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Rule deleted successfully
+ *       404:
+ *         description: Rule not found
+ */
+router.delete("/:id", controller.deleteRule);
+
+
+
 /**
  * @swagger
  * /emergency-pricing/calculate:
