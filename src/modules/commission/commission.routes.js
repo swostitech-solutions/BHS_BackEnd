@@ -1,14 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const gstController = require("./gst.controller");
-
+const commissionController = require("./commission.controller");
 
 /**
  * @swagger
- * /gst/calculate:
+ * /commission/calculate:
  *   post:
- *     summary: Calculate GST for a price
- *     tags: [GST]
+ *     summary: Calculate commission for a base amount
+ *     tags: [Commission]
  *     requestBody:
  *       required: true
  *       content:
@@ -21,15 +20,11 @@ const gstController = require("./gst.controller");
  *               base_amount:
  *                 type: number
  *                 example: 1000
- *               is_inter_state:
- *                 type: boolean
- *                 example: false
  *     responses:
  *       200:
- *         description: GST calculation result
+ *         description: Commission calculation result
  */
 
-
-router.post("/calculate", gstController.calculateGst);
+router.post("/calculate", commissionController.calculateCommission);
 
 module.exports = router;

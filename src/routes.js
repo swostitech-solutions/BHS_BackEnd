@@ -43,7 +43,7 @@ router.use("/wallet", require("./modules/wallet/wallet.routes"));
 // /// --- withdrawal Module ---
 // router.post("/withdraw", walletController.withdrawFromWallet);
 
-
+router.use("/commission", require("./modules/commission/commission.routes"));
 
 
 

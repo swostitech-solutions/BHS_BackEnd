@@ -25,6 +25,11 @@ db.OrderItem = require("./orderItem.model")(sequelize, Sequelize);
 db.Booking = require("./booking.model")(sequelize, Sequelize);
 db.Payment = require("./payment.model")(sequelize, Sequelize);
 db.GstRate = require("../src/modules/gst/gst.model")(sequelize, Sequelize);
+db.CommissionRate = require("../src/modules/commission/commission.model")(
+  sequelize,
+  Sequelize
+);
+
 db.EmergencyPricing =
   require("../src/modules/emergency_pricing/emergency_pricing.model")(
     sequelize,
