@@ -246,31 +246,133 @@ exports.createWalletTopup = async (req, res) => {
 
 
 
+/////// current one ////
+// exports.verifyWalletTopup = async (req, res) => {
+//   try {
+//     const order_id = req.query.order_id || req.body.order_id;
+
+//     if (!order_id) {
+//       return res.status(400).json({ message: "order_id required" });
+//     }
+
+//     const txn = await WalletTransaction.findOne({ where: { order_id } });
+
+//     if (!txn) {
+//       return res.status(404).json({ message: "Transaction not found" });
+//     }
+
+//     // 🔐 Prevent double credit
+//     if (txn.status === "SUCCESS") {
+//       return res.redirect(
+//         `${process.env.FRONTEND_URL}/wallet-success?order_id=${order_id}`
+//       );
+//     }
+
+//     const statusResp = await juspay.order.status(order_id);
+
+//     if (statusResp.status === "CHARGED") {
+//       txn.status = "SUCCESS";
+//       txn.payment_txn_id = statusResp.txn_id || statusResp.payment_id || null;
+//       await txn.save();
+
+//       let wallet = await TechnicianWallet.findOne({
+//         where: { technician_id: txn.technician_id },
+//       });
+
+//       if (!wallet) {
+//         wallet = await TechnicianWallet.create({
+//           technician_id: txn.technician_id,
+//           balance: 0,
+//         });
+//       }
+
+//       wallet.balance = Number(wallet.balance) + Number(txn.amount);
+//       await wallet.save();
+
+//       return res.redirect(
+//         `${process.env.FRONTEND_URL}/wallet-success?order_id=${order_id}`
+//       );
+//     }
+
+//     txn.status = "FAILED";
+//     await txn.save();
+
+//     return res.redirect(
+//       `${process.env.FRONTEND_URL}/wallet-failed?order_id=${order_id}`
+//     );
+//   } catch (err) {
+//     console.error("VERIFY WALLET ERROR →", err);
+//     return res.status(500).json({ message: "Verification failed" });
+//   }
+// };
+
 
 exports.verifyWalletTopup = async (req, res) => {
   try {
-    const order_id = req.query.order_id || req.body.order_id;
+    console.log("==================================");
+    console.log("🚀 VERIFY WALLET TOPUP HIT");
+    console.log("FULL QUERY:", req.query);
+    console.log("FULL BODY:", req.body);
+    console.log("==================================");
+
+    // 🔎 Extract order_id from all possible Juspay fields
+    // const order_id =
+    //   req.query.order_id ||
+    //   req.query.orderId ||
+    //   req.query.merchant_order_id ||
+    //   req.body.order_id ||
+    //   req.body.orderId ||
+    //   req.body.merchant_order_id;
+
+    // console.log("🆔 EXTRACTED ORDER_ID:", order_id);
+
+    let order_id =
+      req.query.order_id ||
+      req.query.orderId ||
+      req.query.merchant_order_id ||
+      req.body.order_id ||
+      req.body.orderId ||
+      req.body.merchant_order_id;
+
+    // 🔥 FIX: Handle comma-separated order_id
+    if (order_id && order_id.includes(",")) {
+      order_id = order_id.split(",")[0].trim();
+    }
+
+    console.log("🆔 CLEANED ORDER_ID:", order_id);
 
     if (!order_id) {
+      console.log("❌ ORDER_ID NOT FOUND IN REQUEST");
       return res.status(400).json({ message: "order_id required" });
     }
 
+    // 🔎 Find transaction in DB
     const txn = await WalletTransaction.findOne({ where: { order_id } });
 
+    console.log("📦 DB TRANSACTION RESULT:", txn);
+
     if (!txn) {
+      console.log("❌ TRANSACTION NOT FOUND IN DB");
       return res.status(404).json({ message: "Transaction not found" });
     }
 
     // 🔐 Prevent double credit
     if (txn.status === "SUCCESS") {
+      console.log("✅ TRANSACTION ALREADY SUCCESS, REDIRECTING");
       return res.redirect(
         `${process.env.FRONTEND_URL}/wallet-success?order_id=${order_id}`
       );
     }
 
+    // 🔎 Check payment status from Juspay
+    console.log("🔍 CHECKING JUSPAY STATUS...");
     const statusResp = await juspay.order.status(order_id);
 
+    console.log("💳 JUSPAY STATUS RESPONSE:", statusResp);
+
     if (statusResp.status === "CHARGED") {
+      console.log("✅ PAYMENT CHARGED, UPDATING DB...");
+
       txn.status = "SUCCESS";
       txn.payment_txn_id = statusResp.txn_id || statusResp.payment_id || null;
       await txn.save();
@@ -280,6 +382,7 @@ exports.verifyWalletTopup = async (req, res) => {
       });
 
       if (!wallet) {
+        console.log("⚠️ WALLET NOT FOUND, CREATING NEW");
         wallet = await TechnicianWallet.create({
           technician_id: txn.technician_id,
           balance: 0,
@@ -289,10 +392,14 @@ exports.verifyWalletTopup = async (req, res) => {
       wallet.balance = Number(wallet.balance) + Number(txn.amount);
       await wallet.save();
 
+      console.log("💰 WALLET UPDATED. NEW BALANCE:", wallet.balance);
+
       return res.redirect(
         `${process.env.FRONTEND_URL}/wallet-success?order_id=${order_id}`
       );
     }
+
+    console.log("❌ PAYMENT FAILED, MARKING FAILED");
 
     txn.status = "FAILED";
     await txn.save();
@@ -301,10 +408,11 @@ exports.verifyWalletTopup = async (req, res) => {
       `${process.env.FRONTEND_URL}/wallet-failed?order_id=${order_id}`
     );
   } catch (err) {
-    console.error("VERIFY WALLET ERROR →", err);
+    console.error("🔥 VERIFY WALLET ERROR →", err);
     return res.status(500).json({ message: "Verification failed" });
   }
 };
+
 
 
 /**
