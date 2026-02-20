@@ -306,7 +306,7 @@ exports.createWalletTopup = async (req, res) => {
 //   }
 // };
 
-
+/// test 20 feb .///
 exports.verifyWalletTopup = async (req, res) => {
   try {
     console.log("==================================");
@@ -511,6 +511,70 @@ exports.getWalletTransactions = async (req, res) => {
 
 
 
+/// working code on 20 feb . /////
+
+// exports.withdrawFromWallet = async (req, res) => {
+//   const t = await db.sequelize.transaction();
+
+//   try {
+//     const { technician_id, amount } = req.body;
+
+//     if (!technician_id || !amount || amount <= 0) {
+//       await t.rollback();
+//       return res.status(400).json({
+//         message: "technician_id and valid amount are required",
+//       });
+//     }
+
+//     const wallet = await TechnicianWallet.findOne({
+//       where: { technician_id },
+//       transaction: t,
+//       lock: t.LOCK.UPDATE,
+//     });
+
+//     if (!wallet || Number(wallet.balance) < Number(amount)) {
+//       await t.rollback();
+//       return res.status(400).json({
+//         message: "Insufficient wallet balance",
+//       });
+//     }
+
+//     // Deduct balance
+//     wallet.balance = Number(wallet.balance) - Number(amount);
+//     await wallet.save({ transaction: t });
+
+//     // Create transaction record
+//     await WalletTransaction.create(
+//       {
+//         technician_id,
+//         wallet_id: wallet.id,
+//         amount,
+//         type: "DEBIT", // ✅ enum-safe
+//         source: "WITHDRAWAL", // ✅ must exist in DB enum
+//         status: "PENDING",
+//       },
+//       { transaction: t }
+//     );
+
+//     await t.commit();
+
+//     return res.json({
+//       success: true,
+//       message: "Withdrawal initiated",
+//       remainingBalance: wallet.balance,
+//     });
+//   } catch (error) {
+//     await t.rollback();
+//     console.error("WALLET WITHDRAW ERROR →", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Withdrawal failed",
+//     });
+//   }
+// };
+
+
+
 
 
 exports.withdrawFromWallet = async (req, res) => {
@@ -539,6 +603,9 @@ exports.withdrawFromWallet = async (req, res) => {
       });
     }
 
+    // Generate Withdrawal Order ID
+    const order_id = `WD${Date.now()}`;
+
     // Deduct balance
     wallet.balance = Number(wallet.balance) - Number(amount);
     await wallet.save({ transaction: t });
@@ -549,9 +616,11 @@ exports.withdrawFromWallet = async (req, res) => {
         technician_id,
         wallet_id: wallet.id,
         amount,
-        type: "DEBIT", // ✅ enum-safe
-        source: "WITHDRAWAL", // ✅ must exist in DB enum
-        status: "PENDING",
+        order_id, // ✅ Added
+        payment_txn_id: order_id, // ✅ Added
+        type: "DEBIT",
+        source: "WITHDRAWAL",
+        status: "SUCCESS", // ✅ Changed from PENDING
       },
       { transaction: t }
     );
@@ -560,22 +629,20 @@ exports.withdrawFromWallet = async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Withdrawal initiated",
+      message: "Withdrawal successful",
+      order_id,
       remainingBalance: wallet.balance,
     });
   } catch (error) {
     await t.rollback();
     console.error("WALLET WITHDRAW ERROR →", error);
+
     return res.status(500).json({
       success: false,
       message: "Withdrawal failed",
     });
   }
 };
-
-
-
-
 
 
 
