@@ -444,3 +444,18 @@ module.exports = router;
  *         description: Server error
  */
 router.post("/withdraw", walletController.withdrawFromWallet);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
