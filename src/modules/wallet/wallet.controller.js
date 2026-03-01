@@ -103,6 +103,7 @@ const juspay = require("../../../payments/juspay");
 
 const TechnicianWallet = db.TechnicianWallet;
 const WalletTransaction = db.WalletTransaction;
+// const Technician = db.Technician;
 
 /**
  * ===============================
@@ -587,7 +588,7 @@ exports.createWalletTopup = async (req, res) => {
 
 
 
-
+/// working properly ///
 exports.verifyWalletTopup = async (req, res) => {
   try {
     let order_id =

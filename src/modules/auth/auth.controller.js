@@ -593,6 +593,7 @@ exports.getAllUsers = async (req, res) => {
         technician:
           user.roleId === 3 && tech
             ? {
+              technician_id: tech.id,
               skill: tech.skill ?? null,
               experience: tech.experience ?? null,
               aadharCardNo: tech.aadharCardNo ?? null,
