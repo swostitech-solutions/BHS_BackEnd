@@ -412,17 +412,18 @@ exports.login = async (req, res) => {
         technicianDetails:
           user.roleId === 3 && tech
             ? {
-              skill: tech.skill,
-              experience: tech.experience,
-              status: tech.status,
-              techCategory: tech.techCategory,
+                technician_id: tech.id,
+                skill: tech.skill,
+                experience: tech.experience,
+                status: tech.status,
+                techCategory: tech.techCategory,
 
-              profileImage: withBaseUrl(req, tech.profileImage),
-              aadharDoc: withBaseUrl(req, tech.aadharDoc),
-              panDoc: withBaseUrl(req, tech.panDoc),
-              bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
-              experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
-            }
+                profileImage: withBaseUrl(req, tech.profileImage),
+                aadharDoc: withBaseUrl(req, tech.aadharDoc),
+                panDoc: withBaseUrl(req, tech.panDoc),
+                bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+                experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+              }
             : null,
       },
     });
@@ -712,30 +713,31 @@ exports.getUserById = async (req, res) => {
       technicianDetails:
         user.roleId === 3 && tech
           ? {
-            skill: tech.skill ?? null,
-            experience: tech.experience ?? null,
-            aadharCardNo: tech.aadharCardNo ?? null,
-            panCardNo: tech.panCardNo ?? null,
-            bankName: tech.bankName ?? null,
-            ifscNo: tech.ifscNo ?? null,
-            branchName: tech.branchName ?? null,
-            status: tech.status ?? "PENDING",
-            timeDuration: tech.timeDuration ?? null,
-            emergencyAvailable: tech.emergencyAvailable ?? false,
-            techCategory: tech.techCategory ?? null,
+              technician_id: tech.id,
+              skill: tech.skill ?? null,
+              experience: tech.experience ?? null,
+              aadharCardNo: tech.aadharCardNo ?? null,
+              panCardNo: tech.panCardNo ?? null,
+              bankName: tech.bankName ?? null,
+              ifscNo: tech.ifscNo ?? null,
+              branchName: tech.branchName ?? null,
+              status: tech.status ?? "PENDING",
+              timeDuration: tech.timeDuration ?? null,
+              emergencyAvailable: tech.emergencyAvailable ?? false,
+              techCategory: tech.techCategory ?? null,
 
-            // ✅ FULL URLs
-            profileImage: withBaseUrl(req, tech.profileImage),
-            aadharDoc: withBaseUrl(req, tech.aadharDoc),
-            panDoc: withBaseUrl(req, tech.panDoc),
-            bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
-            experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+              // ✅ FULL URLs
+              profileImage: withBaseUrl(req, tech.profileImage),
+              aadharDoc: withBaseUrl(req, tech.aadharDoc),
+              panDoc: withBaseUrl(req, tech.panDoc),
+              bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+              experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
 
-            rating: {
-              avg_rating: tech.avg_rating ?? "0.0",
-              rating_count: tech.rating_count ?? 0,
-            },
-          }
+              rating: {
+                avg_rating: tech.avg_rating ?? "0.0",
+                rating_count: tech.rating_count ?? 0,
+              },
+            }
           : null,
     };
 
@@ -825,6 +827,7 @@ exports.getTechnicianByRole = async (req, res) => {
       roleName: getRoleName(user.roleId),
 
       technicianDetails: {
+        technician_id: tech.id,
         skill: tech.skill ?? null,
         experience: tech.experience ?? null,
         aadharCardNo: tech.aadharCardNo ?? null,
