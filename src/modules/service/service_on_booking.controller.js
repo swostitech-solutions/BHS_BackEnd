@@ -61,19 +61,41 @@ exports.createBooking = async (req, res) => {
       order_id = `BD${lastNumber + 1}`;
     }
 
-    const total_price =
-      price * quantity + (emergency_price ? Number(emergency_price) : 0);
+    // const total_price =
+    //   price * quantity + (emergency_price ? Number(emergency_price) : 0);
+
+    // const booking = await ServiceOnBooking.create({
+    //   order_id,
+    //   user_id, // ✅ save user_id
+    //   service_code,
+    //   subservice_code,
+    //   address,
+    //   date,
+    //   time_slot,
+    //   gst,
+    //   emergency_price: emergency_price || 0,
+    //   quantity,
+    //   total_price,
+    //   payment_method: "COD",
+    // });
+
+
+    const base_total = Number(price) * Number(quantity);
+    const emergency = emergency_price ? Number(emergency_price) : 0;
+    const gst_amount = gst ? Number(gst) : 0;
+
+    const total_price = base_total + emergency + gst_amount;
 
     const booking = await ServiceOnBooking.create({
       order_id,
-      user_id, // ✅ save user_id
+      user_id,
       service_code,
       subservice_code,
       address,
       date,
       time_slot,
-      gst,
-      emergency_price: emergency_price || 0,
+      gst: gst_amount,
+      emergency_price: emergency,
       quantity,
       total_price,
       payment_method: "COD",

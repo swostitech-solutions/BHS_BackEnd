@@ -1223,6 +1223,39 @@ router.post("/initiate", async (req, res) => {
 
     console.log("Generated Order ID:", order_id);
 
+    // =======================================
+    // FETCH SUBSERVICE PRICE FROM DB
+    // =======================================
+
+    const subservice = await db.SubService.findOne({
+      where: { subservice_code },
+    });
+
+    if (!subservice) {
+      return res.status(404).json({
+        success: false,
+        message: "Subservice not found",
+      });
+    }
+
+    const basePrice = Number(subservice.price);
+    const qty = Number(quantity);
+    const gstAmount = Number(gst || 0);
+    const emergencyAmount = Number(emergency_price || 0);
+
+    // =======================================
+    // CALCULATE TOTAL PRICE
+    // =======================================
+
+    const baseTotal = basePrice * qty;
+    const finalAmount = baseTotal + gstAmount + emergencyAmount;
+
+    console.log("Base Price:", basePrice);
+    console.log("Quantity:", qty);
+    console.log("GST:", gstAmount);
+    console.log("Emergency:", emergencyAmount);
+    console.log("Final Amount:", finalAmount);
+
     // ===================================================
     // CREATE BOOKING
     // ===================================================
@@ -1239,7 +1272,8 @@ router.post("/initiate", async (req, res) => {
       gst,
       emergency_price: emergency_price || 0,
       quantity,
-      total_price: amount,
+      // total_price: amount,
+      total_price: finalAmount,
       payment_method: "ONLINE",
       payment_status: "INITIATED",
     });
@@ -1254,7 +1288,8 @@ router.post("/initiate", async (req, res) => {
     await db.Payment.create({
       booking_id: booking.id,
       order_code: order_id,
-      amount,
+      // amount,
+      amount: finalAmount,
       customer_id: customerId,
       initiated_at: new Date(),
       status: "INITIATED",
@@ -1273,7 +1308,8 @@ router.post("/initiate", async (req, res) => {
 
     const juspayResponse = await juspay.order.create({
       order_id: order_id,
-      amount: Number(amount).toFixed(2),
+      // amount: Number(amount).toFixed(2),
+      amount: Number(finalAmount).toFixed(2),
       currency: "INR",
       customer_id: String(customerId),
       customer_email: email,
