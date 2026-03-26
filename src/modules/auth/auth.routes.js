@@ -458,6 +458,72 @@ router.put(
 router.post("/login", controller.login);
 
 
+
+
+
+
+/**
+ * @swagger
+ * /auth/technician/{id}/toggle-active:
+ *   patch:
+ *     tags: [Auth]
+ *     summary: Toggle Technician Active/Inactive
+ *     description: >
+ *       Admin can activate or deactivate a technician account.
+ *       - If ACTIVE → technician can login
+ *       - If INACTIVE → login is blocked (account frozen)
+ *
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Technician user ID
+ *         schema:
+ *           type: integer
+ *
+ *     responses:
+ *       200:
+ *         description: Technician active status toggled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Technician is now ACTIVE
+ *                 isActive:
+ *                   type: boolean
+ *                   example: true
+ *
+ *       404:
+ *         description: Technician not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Technician not found
+ *
+ *       500:
+ *         description: Server error
+ */
+router.patch(
+  "/technician/:id/toggle-active",
+  controller.toggleTechnicianActive
+);
+
+
+
+
+
+
+
+
+
+
+
 /**
  * @swagger
  * /auth/logout:

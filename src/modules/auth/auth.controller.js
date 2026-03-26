@@ -256,6 +256,7 @@ exports.signupTechnician = async (req, res) => {
           ifscNo: technician.ifscNo,
           branchName: technician.branchName,
           status: technician.status,
+          isActive: technician.isActive, // ✅ ADD
           timeDuration: technician.timeDuration,
           emergencyAvailable: technician.emergencyAvailable,
           techCategory: technician.techCategory,
@@ -383,11 +384,36 @@ exports.login = async (req, res) => {
 
     const tech = user.technician;
 
-    if (user.roleId === 3 && tech?.status === "PENDING") {
-      return res.status(403).json({
-        message: "Technician account is pending approval",
-        status: tech.status,
-      });
+    // if (user.roleId === 3 && tech?.status === "PENDING") {
+    //   return res.status(403).json({
+    //     message: "Technician account is pending approval",
+    //     status: tech.status,
+    //   });
+    // }
+
+
+    if (user.roleId === 3) {
+      // ❌ Pending approval
+      if (tech?.status === "PENDING") {
+        return res.status(403).json({
+          message: "Technician account is pending approval",
+          status: tech.status,
+        });
+      }
+
+      // ❌ Rejected
+      if (tech?.status === "REJECT") {
+        return res.status(403).json({
+          message: "Technician account has been rejected",
+        });
+      }
+
+      // ❌ Inactive (NEW LOGIC)
+      if (!tech?.isActive) {
+        return res.status(403).json({
+          message: "Your account is inactive. Please contact admin.",
+        });
+      }
     }
 
     const accessToken = generateAccessToken(user);
@@ -416,6 +442,7 @@ exports.login = async (req, res) => {
                 skill: tech.skill,
                 experience: tech.experience,
                 status: tech.status,
+                isActive: tech.isActive,
                 techCategory: tech.techCategory,
 
                 profileImage: withBaseUrl(req, tech.profileImage),
@@ -545,8 +572,37 @@ exports.login = async (req, res) => {
 
 
 
+////// Add API to Toggle Active / Inactive ///////
+
+exports.toggleTechnicianActive = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const technician = await Technician.findOne({ where: { userId: id } });
+
+    if (!technician) {
+      return res.status(404).json({ message: "Technician not found" });
+    }
+
+    technician.isActive = !technician.isActive;
+    await technician.save();
+
+    return res.json({
+      message: `Technician is now ${
+        technician.isActive ? "ACTIVE" : "INACTIVE"
+      }`,
+      isActive: technician.isActive,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
+
+
+///////// logout /////////
 exports.logout = async (req, res) => {
   try {
     const { userId } = req.body ?? {};
@@ -594,30 +650,31 @@ exports.getAllUsers = async (req, res) => {
         technician:
           user.roleId === 3 && tech
             ? {
-              technician_id: tech.id,
-              skill: tech.skill ?? null,
-              experience: tech.experience ?? null,
-              aadharCardNo: tech.aadharCardNo ?? null,
-              panCardNo: tech.panCardNo ?? null,
-              bankName: tech.bankName ?? null,
-              ifscNo: tech.ifscNo ?? null,
-              branchName: tech.branchName ?? null,
-              status: tech.status ?? "PENDING",
-              timeDuration: tech.timeDuration ?? null,
-              emergencyAvailable: tech.emergencyAvailable ?? false,
-              techCategory: tech.techCategory ?? null,
+                technician_id: tech.id,
+                skill: tech.skill ?? null,
+                experience: tech.experience ?? null,
+                aadharCardNo: tech.aadharCardNo ?? null,
+                panCardNo: tech.panCardNo ?? null,
+                bankName: tech.bankName ?? null,
+                ifscNo: tech.ifscNo ?? null,
+                branchName: tech.branchName ?? null,
+                status: tech.status ?? "PENDING",
+                isActive: tech.isActive, // ✅ ADD THIS
+                timeDuration: tech.timeDuration ?? null,
+                emergencyAvailable: tech.emergencyAvailable ?? false,
+                techCategory: tech.techCategory ?? null,
 
-              profileImage: withBaseUrl(req, tech.profileImage),
-              aadharDoc: withBaseUrl(req, tech.aadharDoc),
-              panDoc: withBaseUrl(req, tech.panDoc),
-              bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
-              experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+                profileImage: withBaseUrl(req, tech.profileImage),
+                aadharDoc: withBaseUrl(req, tech.aadharDoc),
+                panDoc: withBaseUrl(req, tech.panDoc),
+                bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+                experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
 
-              rating: {
-                avg_rating: tech.avg_rating ?? "0.0",
-                rating_count: tech.rating_count ?? 0,
-              },
-            }
+                rating: {
+                  avg_rating: tech.avg_rating ?? "0.0",
+                  rating_count: tech.rating_count ?? 0,
+                },
+              }
             : null,
       };
     });
@@ -638,6 +695,56 @@ exports.getAllUsers = async (req, res) => {
  * @route PATCH /api/auth/technician/:id/status
  * @access Admin only
  */
+// exports.updateTechnicianStatus = async (req, res) => {
+//   try {
+//     const { id } = req.params; // userId of technician
+//     const { status } = req.body; // APPROVE / REJECT
+
+//     const mapStatus = {
+//       APPROVE: "ACCEPT",
+//       REJECT: "REJECT",
+//     };
+
+//     const newStatus = mapStatus[status?.toUpperCase()];
+//     if (!newStatus) {
+//       return res.status(400).json({
+//         message: "Invalid status. Use APPROVE or REJECT",
+//       });
+//     }
+
+//     const technician = await Technician.findOne({ where: { userId: id } });
+//     if (!technician) {
+//       return res.status(404).json({ message: "Technician not found" });
+//     }
+
+//     await technician.update({ status: newStatus });
+
+//     const user = await User.findByPk(id, {
+//       include: [{ model: Technician, as: "technician" }],
+//     });
+
+//     return res.json({
+//       message: `Technician status updated to ${newStatus}`,
+//       user: {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         roleId: user.roleId,
+//         roleName: getRoleName(user.roleId),
+//         technicianDetails: {
+//           ...user.technician.toJSON(),
+//         },
+//       },
+//     });
+//   } catch (err) {
+//     console.error("UPDATE TECHNICIAN STATUS ERROR →", err);
+//     return res.status(500).json({ message: err.message || "Server error" });
+//   }
+// };
+
+
+
+
 exports.updateTechnicianStatus = async (req, res) => {
   try {
     const { id } = req.params; // userId of technician
@@ -656,6 +763,7 @@ exports.updateTechnicianStatus = async (req, res) => {
     }
 
     const technician = await Technician.findOne({ where: { userId: id } });
+
     if (!technician) {
       return res.status(404).json({ message: "Technician not found" });
     }
@@ -666,6 +774,8 @@ exports.updateTechnicianStatus = async (req, res) => {
       include: [{ model: Technician, as: "technician" }],
     });
 
+    const tech = user.technician;
+
     return res.json({
       message: `Technician status updated to ${newStatus}`,
       user: {
@@ -674,9 +784,28 @@ exports.updateTechnicianStatus = async (req, res) => {
         email: user.email,
         roleId: user.roleId,
         roleName: getRoleName(user.roleId),
-        technicianDetails: {
-          ...user.technician.toJSON(),
-        },
+
+        technicianDetails: tech
+          ? {
+              technician_id: tech.id,
+              skill: tech.skill ?? null,
+              experience: tech.experience ?? null,
+              status: tech.status ?? "PENDING",
+
+              // ✅ IMPORTANT (YOUR MAIN REQUIREMENT)
+              isActive: tech.isActive ?? true,
+
+              techCategory: tech.techCategory ?? null,
+              timeDuration: tech.timeDuration ?? null,
+              emergencyAvailable: tech.emergencyAvailable ?? false,
+
+              profileImage: withBaseUrl(req, tech.profileImage),
+              aadharDoc: withBaseUrl(req, tech.aadharDoc),
+              panDoc: withBaseUrl(req, tech.panDoc),
+              bankPassbookDoc: withBaseUrl(req, tech.bankPassbookDoc),
+              experienceCertDoc: withBaseUrl(req, tech.experienceCertDoc),
+            }
+          : null,
       },
     });
   } catch (err) {
@@ -722,6 +851,7 @@ exports.getUserById = async (req, res) => {
               ifscNo: tech.ifscNo ?? null,
               branchName: tech.branchName ?? null,
               status: tech.status ?? "PENDING",
+              isActive: tech.isActive, // ✅ ADD THIS
               timeDuration: tech.timeDuration ?? null,
               emergencyAvailable: tech.emergencyAvailable ?? false,
               techCategory: tech.techCategory ?? null,
@@ -836,6 +966,7 @@ exports.getTechnicianByRole = async (req, res) => {
         ifscNo: tech.ifscNo ?? null,
         branchName: tech.branchName ?? null,
         status: tech.status ?? "PENDING",
+        isActive: tech.isActive, // ✅ ADD THIS
         timeDuration: tech.timeDuration ?? null,
         emergencyAvailable: tech.emergencyAvailable ?? false,
         techCategory: tech.techCategory ?? null,

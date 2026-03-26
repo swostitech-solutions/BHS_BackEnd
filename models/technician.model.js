@@ -40,6 +40,12 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: "PENDING",
       },
 
+      isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+
       /* ⭐ RATING SYSTEM (NEW) */
       avg_rating: {
         type: DataTypes.DECIMAL(2, 1),
