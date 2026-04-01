@@ -13,6 +13,85 @@ const refreshController = require("./refreshController");
  *   description: Authentication & Registration APIs
  */
 
+
+
+
+/**
+ * @swagger
+ * /auth/admin/profile:
+ *   put:
+ *     tags: [Auth]
+ *     summary: Update admin profile
+ *     description: >
+ *       Allows an admin (roleId = 1) to update profile details
+ *       and upload/update a profile photo using multipart/form-data.
+ *
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 description: Admin user ID
+ *                 example: 1
+ *               name:
+ *                 type: string
+ *                 example: Admin User
+ *               email:
+ *                 type: string
+ *                 example: admin@gmail.com
+ *               mobile:
+ *                 type: string
+ *                 example: "9876543210"
+ *               address:
+ *                 type: string
+ *                 example: Kolkata Head Office
+ *
+ *               # 📷 Profile Image Upload
+ *               profileImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Admin profile photo (jpg, png, webp)
+ *
+ *     responses:
+ *       200:
+ *         description: Admin profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Admin profile updated successfully
+ *                 profileImage:
+ *                   type: string
+ *                   example: /uploads/admin/1704982233445.png
+ *
+ *       400:
+ *         description: Invalid input or missing userId
+ *
+ *       404:
+ *         description: Admin not found
+ *
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  "/admin/profile",
+  uploadClient,
+  controller.updateAdminProfile
+);
+
+
+
+
+
 /**
  * @swagger
  * /auth/signup/client:

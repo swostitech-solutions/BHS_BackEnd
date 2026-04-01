@@ -65,6 +65,62 @@ const ensureDefaultAdmin = async () => {
   }
 };
 
+/* ------------ Admin Update --------- */
+exports.updateAdminProfile = async (req, res) => {
+  try {
+    const { userId, name, email, mobile, address } = req.body;
+
+    /* ---------------- VALIDATION ---------------- */
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    /* ---------------- FIND ADMIN ---------------- */
+    const admin = await User.findByPk(userId);
+
+    if (!admin || admin.roleId !== 1) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    /* ---------------- EMAIL UNIQUENESS CHECK ---------------- */
+    if (email && email !== admin.email) {
+      const emailExists = await User.findOne({ where: { email } });
+
+      if (emailExists) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+    }
+
+    /* ---------------- PROFILE IMAGE ---------------- */
+    const profileImage = req.file?.path || admin.profileImage;
+
+    /* ---------------- UPDATE ADMIN ---------------- */
+    await admin.update({
+      name: name ?? admin.name,
+      email: email ?? admin.email,
+      mobile: mobile ?? admin.mobile,
+      address: address ?? admin.address,
+      profileImage,
+    });
+
+    /* ---------------- RESPONSE ---------------- */
+    return res.json({
+      message: "Admin profile updated successfully",
+      admin: {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        mobile: admin.mobile,
+        address: admin.address,
+        profileImage: withBaseUrl(req, admin.profileImage),
+      },
+    });
+  } catch (err) {
+    console.error("UPDATE ADMIN PROFILE ERROR →", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 /* -------- Client Signup -------- */
 exports.signupClient = async (req, res) => {
   try {
