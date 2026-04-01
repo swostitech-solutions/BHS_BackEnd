@@ -13,6 +13,16 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
 
+      // user_id: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true, // ✅ changed
+      // },
+
+      // guest_id: {
+      //   type: DataTypes.STRING, // ✅ added
+      //   allowNull: true,
+      // },
+
       service_id: {
         type: DataTypes.INTEGER,
         allowNull: false,

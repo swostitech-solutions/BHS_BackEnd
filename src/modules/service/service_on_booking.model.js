@@ -49,6 +49,12 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: "COD",
       },
 
+      ////// added ///
+      payment_status: {
+        type: DataTypes.STRING,
+        defaultValue: "INITIATED",
+      },
+
       /* Technician allocation */
       technician_allocated: {
         type: DataTypes.BOOLEAN,

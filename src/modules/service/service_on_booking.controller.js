@@ -5,6 +5,7 @@ const SubService = db.SubService;
 const User = db.User;
 const Technician = db.Technician;
 const { deductCommission } = require("../wallet/wallet.service");
+const { Op } = require("sequelize");
 
 // Generate order_id
 const generateOrderId = async () => {
@@ -32,10 +33,103 @@ const attachBookingImage = (req, booking) => {
 
 
 // CREATE booking
+// exports.createBooking = async (req, res) => {
+//   try {
+//     const {
+//       user_id, //  New: accept user_id
+//       service_code,
+//       subservice_code,
+//       address,
+//       date,
+//       time_slot,
+//       gst,
+//       emergency_price,
+//       quantity,
+//       price,
+//     } = req.body;
+
+//     if (!user_id) {
+//       return res.status(400).json({ message: "user_id is required" });
+//     }
+
+//     // Auto generate order_id
+//     const lastBooking = await ServiceOnBooking.findOne({
+//       order: [["id", "DESC"]],
+//     });
+//     let order_id = "BD100001";
+//     if (lastBooking) {
+//       const lastNumber = parseInt(lastBooking.order_id.replace("BD", ""));
+//       order_id = `BD${lastNumber + 1}`;
+//     }
+
+//     // const total_price =
+//     //   price * quantity + (emergency_price ? Number(emergency_price) : 0);
+
+//     // const booking = await ServiceOnBooking.create({
+//     //   order_id,
+//     //   user_id, // ✅ save user_id
+//     //   service_code,
+//     //   subservice_code,
+//     //   address,
+//     //   date,
+//     //   time_slot,
+//     //   gst,
+//     //   emergency_price: emergency_price || 0,
+//     //   quantity,
+//     //   total_price,
+//     //   payment_method: "COD",
+//     // });
+
+
+//     const base_total = Number(price) * Number(quantity);
+//     const emergency = emergency_price ? Number(emergency_price) : 0;
+//     const gst_amount = gst ? Number(gst) : 0;
+
+//     const total_price = base_total + emergency + gst_amount;
+
+//     const booking = await ServiceOnBooking.create({
+//       order_id,
+//       user_id,
+//       service_code,
+//       subservice_code,
+//       address,
+//       date,
+//       time_slot,
+//       gst: gst_amount,
+//       emergency_price: emergency,
+//       quantity,
+//       total_price,
+//       payment_method: "COD",
+//     });
+
+//     // Include Service, SubService, and User details
+//     const bookingWithDetails = await ServiceOnBooking.findByPk(booking.id, {
+//       include: [
+//         { model: Service, as: "service" },
+//         { model: SubService, as: "subservice" },
+//         {
+//           model: User,
+//           attributes: ["id", "username", "email"], // ✅ only return these fields
+//         },
+//       ],
+//     });
+
+//     res.status(201).json({
+//       message: "Booking created",
+//       booking: bookingWithDetails,
+//     });
+//   } catch (err) {
+//     console.error("CREATE BOOKING ERROR →", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
+// CREATE booking
 exports.createBooking = async (req, res) => {
   try {
     const {
-      user_id, //  New: accept user_id
+      user_id,
       service_code,
       subservice_code,
       address,
@@ -55,37 +149,21 @@ exports.createBooking = async (req, res) => {
     const lastBooking = await ServiceOnBooking.findOne({
       order: [["id", "DESC"]],
     });
+
     let order_id = "BD100001";
     if (lastBooking) {
       const lastNumber = parseInt(lastBooking.order_id.replace("BD", ""));
       order_id = `BD${lastNumber + 1}`;
     }
 
-    // const total_price =
-    //   price * quantity + (emergency_price ? Number(emergency_price) : 0);
-
-    // const booking = await ServiceOnBooking.create({
-    //   order_id,
-    //   user_id, // ✅ save user_id
-    //   service_code,
-    //   subservice_code,
-    //   address,
-    //   date,
-    //   time_slot,
-    //   gst,
-    //   emergency_price: emergency_price || 0,
-    //   quantity,
-    //   total_price,
-    //   payment_method: "COD",
-    // });
-
-
+    // ✅ PRICE CALCULATION
     const base_total = Number(price) * Number(quantity);
     const emergency = emergency_price ? Number(emergency_price) : 0;
     const gst_amount = gst ? Number(gst) : 0;
 
     const total_price = base_total + emergency + gst_amount;
 
+    // ✅ CREATE BOOKING (FIX APPLIED HERE)
     const booking = await ServiceOnBooking.create({
       order_id,
       user_id,
@@ -98,7 +176,11 @@ exports.createBooking = async (req, res) => {
       emergency_price: emergency,
       quantity,
       total_price,
+
       payment_method: "COD",
+
+      // 🔥 IMPORTANT FIX
+      payment_status: "PAID", // COD = already paid
     });
 
     // Include Service, SubService, and User details
@@ -108,7 +190,7 @@ exports.createBooking = async (req, res) => {
         { model: SubService, as: "subservice" },
         {
           model: User,
-          attributes: ["id", "username", "email"], // ✅ only return these fields
+          attributes: ["id", "username", "email"],
         },
       ],
     });
@@ -127,9 +209,111 @@ exports.createBooking = async (req, res) => {
 
 
 // GET all bookings with service, subservice & user details
+// exports.getAllBookings = async (req, res) => {
+//   try {
+//     const bookings = await ServiceOnBooking.findAll({
+//       include: [
+//         { model: Service, as: "service" },
+//         { model: SubService, as: "subservice" },
+//         {
+//           model: User,
+//           attributes: ["id", "username", "email", "name", "mobile", "address"],
+//         },
+//         {
+//           model: Technician,
+//           as: "technician",
+//           include: [
+//             {
+//               model: User,
+//               as: "user",
+//               attributes: [
+//                 "id",
+//                 "name",
+//                 "email",
+//                 "mobile",
+//                 "address",
+//                 "username",
+//                 "roleId",
+//               ],
+//             },
+//           ],
+//           attributes: [
+//             "skill",
+//             "experience",
+//             "status",
+//             "aadharCardNo",
+//             "panCardNo",
+//             "bankName",
+//             "ifscNo",
+//             "branchName",
+//             "timeDuration",
+//             "emergencyAvailable",
+//             "techCategory",
+//           ],
+//         },
+//       ],
+//       order: [["createdAt", "DESC"]],
+//     });
+
+//     // Format bookings to merge technician user info
+//     const formattedBookings = bookings.map((b) => {
+//       const booking = b.toJSON();
+
+//       if (booking.technician && booking.technician.user) {
+//         const user = booking.technician.user;
+//         booking.technician = {
+//           id: user.id,
+//           name: user.name,
+//           email: user.email,
+//           mobile: user.mobile,
+//           address: user.address,
+//           username: user.username,
+//           roleId: user.roleId,
+//           roleName: "Technician",
+//           technicianDetails: {
+//             skill: booking.technician.skill,
+//             experience: booking.technician.experience,
+//             status: booking.technician.status,
+//             aadharCardNo: booking.technician.aadharCardNo,
+//             panCardNo: booking.technician.panCardNo,
+//             bankName: booking.technician.bankName,
+//             ifscNo: booking.technician.ifscNo,
+//             branchName: booking.technician.branchName,
+//             timeDuration: booking.technician.timeDuration,
+//             emergencyAvailable: booking.technician.emergencyAvailable,
+//             techCategory: booking.technician.techCategory,
+//           },
+//         };
+//         booking.technician_id = user.id; // same as User.id
+//       }
+
+//       // return booking;
+//       return attachBookingImage(req, booking);
+
+//     });
+
+//     res.status(200).json({ bookings: formattedBookings });
+//   } catch (err) {
+//     console.error("GET ALL BOOKINGS ERROR →", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
 exports.getAllBookings = async (req, res) => {
   try {
     const bookings = await ServiceOnBooking.findAll({
+      where: {
+        [Op.or]: [
+          { payment_method: "COD" },
+          {
+            payment_method: "ONLINE",
+            payment_status: {
+              [Op.in]: ["INITIATED", "PAID"], // ✅ show both
+            },
+          },
+        ],
+      },
       include: [
         { model: Service, as: "service" },
         { model: SubService, as: "subservice" },
@@ -177,6 +361,7 @@ exports.getAllBookings = async (req, res) => {
     const formattedBookings = bookings.map((b) => {
       const booking = b.toJSON();
 
+      // ✅ Merge technician user details
       if (booking.technician && booking.technician.user) {
         const user = booking.technician.user;
         booking.technician = {
@@ -202,12 +387,18 @@ exports.getAllBookings = async (req, res) => {
             techCategory: booking.technician.techCategory,
           },
         };
-        booking.technician_id = user.id; // same as User.id
+        booking.technician_id = user.id;
       }
 
-      // return booking;
-      return attachBookingImage(req, booking);
+      // ✅ OPTIONAL: Add readable payment label
+      booking.payment_status_label =
+        booking.payment_status === "PAID"
+          ? "Confirmed"
+          : booking.payment_status === "INITIATED"
+          ? "Payment Pending"
+          : "Failed";
 
+      return attachBookingImage(req, booking);
     });
 
     res.status(200).json({ bookings: formattedBookings });

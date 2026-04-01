@@ -126,8 +126,13 @@ exports.getAllSubServices = async (req, res) => {
     // const data = await SubService.findAll({
     //   include: [{ model: Service, attributes: ["id", "name"] }],
     // });
+    // const data = await SubService.findAll({
+    //   include: [{ model: Service, attributes: ["id", "name", "service_code"] }],
+    // });
+
     const data = await SubService.findAll({
       include: [{ model: Service, attributes: ["id", "name", "service_code"] }],
+      order: [["id", "ASC"]], // ✅ keeps stable order
     });
 
 

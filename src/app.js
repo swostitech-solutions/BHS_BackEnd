@@ -74,3 +74,104 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
 module.exports = app;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////// cookies parser added for guest_id ///////
+
+// const express = require("express");
+// const cors = require("cors");
+// const routes = require("./routes");
+// const path = require("path");
+// const swaggerUi = require("swagger-ui-express");
+// const swaggerJsDoc = require("swagger-jsdoc");
+// const juspayRoutes = require("../payments/juspay.routes");
+// const cookieParser = require("cookie-parser"); // ✅ ADD THIS
+
+// const app = express();
+
+// // Middleware
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
+
+// // ✅ CORS CONFIG (UPDATED)
+// const corsOptions = {
+//   origin: ["http://localhost:3000", "https://bhsfrontendlatest.vercel.app"],
+//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//   allowedHeaders: ["Content-Type", "Authorization"], // keep this
+//   credentials: true, // ✅ REQUIRED for cookies
+// };
+
+// app.use(cors(corsOptions));
+
+// // ✅ COOKIE PARSER (VERY IMPORTANT - must be after cors)
+// app.use(cookieParser());
+
+// // Routes
+// app.use("/api", routes);
+// app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// app.use("/api/payment/juspay", juspayRoutes);
+
+// // Swagger
+// const swaggerOptions = {
+//   definition: {
+//     openapi: "3.0.0",
+//     info: {
+//       title: "BHS Backend API",
+//       version: "1.0.0",
+//       description: "BHS service platform API",
+//     },
+//     servers: [
+//       { url: "http://localhost:4000/api", description: "Local Server" },
+//       {
+//         url: "https://bhs-backend-ou0m.onrender.com/api",
+//         description: "Production Server",
+//       },
+//     ],
+//     components: {
+//       securitySchemes: {
+//         BearerAuth: {
+//           type: "http",
+//           scheme: "bearer",
+//           bearerFormat: "JWT",
+//         },
+//       },
+//     },
+//     security: [
+//       {
+//         BearerAuth: [],
+//       },
+//     ],
+//   },
+//   apis: ["./src/modules/**/*.js", "./payments/**/*.js"],
+// };
+
+// const swaggerSpec = swaggerJsDoc(swaggerOptions);
+// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// module.exports = app;
