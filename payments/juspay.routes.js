@@ -1177,7 +1177,7 @@ const juspay = require("./juspay");
 
 
 
-
+/////////////////// current one code with a single order id showing ///////
 router.post("/initiate", async (req, res) => {
   try {
     console.log("\n=========== INITIATE START ===========");
@@ -1344,6 +1344,8 @@ router.post("/initiate", async (req, res) => {
     });
   }
 });
+
+
 
 
 
@@ -1536,28 +1538,90 @@ router.post("/webhook", async (req, res) => {
 
 
 
+// router.all("/redirect", async (req, res) => {
+//   try {
+//     console.log("\n=========== REDIRECT START ===========");
+//     console.log("Method:", req.method);
+//     console.log("Query:", req.query);
+//     console.log("Body:", req.body);
+
+//     const order_id = req.body.order_id || req.query.order_id;
+
+//     const paymentStatus = req.body.status || req.query.status;
+
+//     console.log("Received Order ID:", order_id);
+//     console.log("Payment Status:", paymentStatus);
+
+//     const payment = await db.Payment.findOne({
+//       where: { order_code: order_id },
+//     });
+
+//     console.log("DB Payment Status:", payment?.status);
+
+//     if (paymentStatus === "CHARGED") {
+//       console.log("Updating payment SUCCESS...");
+
+//       await db.Payment.update(
+//         { status: "SUCCESS" },
+//         { where: { order_code: order_id } }
+//       );
+
+//       await db.ServiceOnBooking.update(
+//         { payment_status: "PAID" },
+//         { where: { order_id: order_id } }
+//       );
+
+//       console.log("✔ Payment SUCCESS");
+//       console.log("✔ Booking PAID");
+
+//       return res.redirect(
+//         `http://localhost:3000/thank-you?order_id=${order_id}`
+//       );
+//     }
+
+//     console.log("❌ Payment FAILED");
+
+//     await db.Payment.update(
+//       { status: "FAILED" },
+//       { where: { order_code: order_id } }
+//     );
+
+//     return res.redirect(
+//       `http://localhost:3000/payment-failed?order_id=${order_id}`
+//     );
+//   } catch (err) {
+//     console.error("REDIRECT ERROR:", err);
+
+//     return res.redirect("http://localhost:3000/payment-failed");
+//   }
+// });
+
+
+
+
 router.all("/redirect", async (req, res) => {
   try {
     console.log("\n=========== REDIRECT START ===========");
-    console.log("Method:", req.method);
-    console.log("Query:", req.query);
-    console.log("Body:", req.body);
 
     const order_id = req.body.order_id || req.query.order_id;
-
     const paymentStatus = req.body.status || req.query.status;
 
-    console.log("Received Order ID:", order_id);
+    const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+    console.log("Order ID:", order_id);
     console.log("Payment Status:", paymentStatus);
+    console.log("Frontend URL:", FRONTEND_URL);
+
+    if (!order_id) {
+      return res.redirect(`${FRONTEND_URL}/payment-failed`);
+    }
 
     const payment = await db.Payment.findOne({
       where: { order_code: order_id },
     });
 
-    console.log("DB Payment Status:", payment?.status);
-
     if (paymentStatus === "CHARGED") {
-      console.log("Updating payment SUCCESS...");
+      console.log("✔ Payment SUCCESS");
 
       await db.Payment.update(
         { status: "SUCCESS" },
@@ -1569,12 +1633,7 @@ router.all("/redirect", async (req, res) => {
         { where: { order_id: order_id } }
       );
 
-      console.log("✔ Payment SUCCESS");
-      console.log("✔ Booking PAID");
-
-      return res.redirect(
-        `http://localhost:3000/thank-you?order_id=${order_id}`
-      );
+      return res.redirect(`${FRONTEND_URL}/thank-you?order_id=${order_id}`);
     }
 
     console.log("❌ Payment FAILED");
@@ -1584,13 +1643,13 @@ router.all("/redirect", async (req, res) => {
       { where: { order_code: order_id } }
     );
 
-    return res.redirect(
-      `http://localhost:3000/payment-failed?order_id=${order_id}`
-    );
+    return res.redirect(`${FRONTEND_URL}/payment-failed?order_id=${order_id}`);
   } catch (err) {
     console.error("REDIRECT ERROR:", err);
 
-    return res.redirect("http://localhost:3000/payment-failed");
+    const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+    return res.redirect(`${FRONTEND_URL}/payment-failed`);
   }
 });
 
