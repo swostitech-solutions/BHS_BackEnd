@@ -1,453 +1,12 @@
-  ////// workable code for juspay but only the orederbooking verify id is broken ///////
-  
-//   const express = require("express");
-//   const db = require("../models");
-//   const router = express.Router();
-//   const juspay = require("./juspay");
-//   const config = require("../keys/juspay_config.json");
-//   const generateOrderId = require("../src/utils/generateOrderId");
 
-//   /**
-//    * @swagger
-//    * /payment/juspay/initiate:
-//    *   post:
-//    *     summary: Create service booking + initiate Juspay payment
-//    *     description: |
-//    *       This API will:
-//    *       1. Generate BD order id from ServiceOnBooking sequence  
-//    *       2. Create booking record with payment_method = ONLINE  
-//    *       3. Create payment entry  
-//    *       4. Initiate Juspay transaction  
-//    *       5. Return only required payment URLs
-//    *
-//    *     tags:
-//    *       - Payment
-//    *
-//    *     requestBody:
-//    *       required: true
-//    *       content:
-//    *         application/json:
-//    *           schema:
-//    *             type: object
-//    *
-//    *             required:
-//    *               - amount
-//    *               - customerId
-//    *               - service_code
-//    *               - subservice_code
-//    *               - address
-//    *               - date
-//    *               - time_slot
-//    *               - quantity
-//    *
-//    *             properties:
-//    *
-//    *               amount:
-//    *                 type: number
-//    *                 description: Final payable amount
-//    *                 example: 499
-//    *
-//    *               customerId:
-//    *                 type: integer
-//    *                 description: Logged in user id
-//    *                 example: 1
-//    *
-//    *               email:
-//    *                 type: string
-//    *                 example: "user@gmail.com"
-//    *
-//    *               mobile:
-//    *                 type: string
-//    *                 example: "9876543210"
-//    *
-//    *               service_code:
-//    *                 type: string
-//    *                 example: "AC10001"
-//    *
-//    *               subservice_code:
-//    *                 type: string
-//    *                 example: "AC10001-01"
-//    *
-//    *               address:
-//    *                 type: string
-//    *                 example: "123 Main Street"
-//    *
-//    *               date:
-//    *                 type: string
-//    *                 format: date
-//    *                 example: "2026-01-10"
-//    *
-//    *               time_slot:
-//    *                 type: string
-//    *                 example: "10:00-11:00"
-//    *
-//    *               gst:
-//    *                 type: number
-//    *                 example: 18
-//    *
-//    *               emergency_price:
-//    *                 type: number
-//    *                 example: 100
-//    *
-//    *               quantity:
-//    *                 type: integer
-//    *                 example: 2
-//    *
-//    *     responses:
-//    *       200:
-//    *         description: Payment initiated successfully
-//    *         content:
-//    *           application/json:
-//    *             schema:
-//    *               type: object
-//    *
-//    *               properties:
-//    *
-//    *                 success:
-//    *                   type: boolean
-//    *                   example: true
-//    *
-//    *                 orderId:
-//    *                   type: string
-//    *                   example: "BD100027"
-//    *
-//    *                 juspay_id:
-//    *                   type: string
-//    *                   example: "ordeh_abc123"
-//    *
-//    *                 status:
-//    *                   type: string
-//    *                   example: "CREATED"
-//    *
-//    *                 payment_urls:
-//    *                   type: object
-//    *                   properties:
-//    *
-//    *                     web:
-//    *                       type: string
-//    *                       example: "https://smartgateway..."
-//    *
-//    *                     mobile:
-//    *                       type: string
-//    *                       example: "https://smartgateway..."
-//    *
-//    *                     iframe:
-//    *                       type: string
-//    *                       example: "https://smartgateway..."
-//    *
-//    *       400:
-//    *         description: Missing required fields
-//    *
-//    *       500:
-//    *         description: Payment init failed
-//    */
 
+/////// tested 3rd stage /////
 
-//   router.post("/initiate", async (req, res) => {
-//     try {
-//       const {
-//         amount,
-//         customerId,
-//         email,
-//         mobile,
-//         service_code,
-//         subservice_code,
-//         address,
-//         date,
-//         time_slot,
-//         gst,
-//         emergency_price,
-//         quantity,
-//       } = req.body;
 
-//       if (!amount || !customerId || !subservice_code || !quantity) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Missing required fields",
-//         });
-//       }
-
-//       // ===================================================
-//       // ✅ SAME COD ORDER ID LOGIC - SINGLE SOURCE
-//       // ===================================================
-//       const lastBooking = await db.ServiceOnBooking.findOne({
-//         order: [["id", "DESC"]],
-//       });
-
-//       let order_id = "BD100001";
-
-//       if (lastBooking) {
-//         const lastNumber = parseInt(lastBooking.order_id.replace("BD", ""));
-//         order_id = `BD${lastNumber + 1}`;
-//       }
-
-//       // ===================================================
-//       // 1️⃣ CREATE BOOKING FIRST (ONLINE MODE)
-//       // ===================================================
-//         const booking = await db.ServiceOnBooking.create({
-//           order_id,
-//           user_id: customerId,
-//           service_code,
-//           subservice_code,
-//           address,
-//           date,
-//           time_slot,
-//           gst,
-//           emergency_price: emergency_price || 0,
-//           quantity,
-//           total_price: amount,
-//           payment_method: "ONLINE",
-//           payment_status: "INITIATED",
-//         });
-
-//       // ===================================================
-//       // 2️⃣ CREATE PAYMENT ENTRY (FK → booking.id)
-//       // ===================================================
-//       // await db.Payment.create({
-//       //   order_id: booking.id,
-//       //   amount,
-//       //   customer_id: customerId,
-//       //   initiated_at: new Date(),
-//       // });
-
-//       await db.Payment.create({
-//         booking_id: booking.id,
-//         order_code: order_id, // BD100025
-//         amount,
-//         customer_id: customerId,
-//         initiated_at: new Date(),
-//       });
-
-
-//       // ===================================================
-//       // 3️⃣ JUSPAY CALL
-//       // ===================================================
-//       // const amountInPaise = Math.round(Number(amount) * 100); // added 
-//       // const juspayResponse = await juspay.order.create({
-//       //   order_id: order_id, // BD100025
-//       //   // amount: amount * 100,
-//       //   amount: amountInPaise, //added
-//       //   currency: "INR",
-//       //   customer_id: String(customerId),
-//       //   customer_email: email,
-//       //   customer_phone: mobile,
-//       //   return_url: `${process.env.BASE_URL}/api/payment/juspay/verify?order_id=${order_id}`,
-//       // });
-
-//       const juspayResponse = await juspay.order.create({
-//         order_id: order_id, // BD100005
-//         amount: Number(amount).toFixed(2), // ✅ RUPEES, not paise
-//         currency: "INR",
-//         customer_id: String(customerId),
-//         customer_email: email,
-//         customer_phone: mobile,
-//         // return_url: `${process.env.BASE_URL}/api/payment/juspay/verify?order_id=${order_id}`,
-//         // return_url: `${process.env.BASE_URL}/payment/juspay/verify?order_id=${order_id}`,
-//         return_url: `${process.env.BASE_URL}/api/payment/juspay/redirect?order_id=${order_id}`,
-//       });
-
-//       // ===================================================
-//       // 4️⃣ CLEAN RESPONSE
-//       // ===================================================
-//       return res.status(200).json({
-//         success: true,
-//         orderId: order_id,
-//         juspay_id: juspayResponse.id,
-//         status: juspayResponse.status,
-
-//         payment_urls: {
-//           web: juspayResponse.payment_links?.web || null,
-//           mobile: juspayResponse.payment_links?.mobile || null,
-//           iframe: juspayResponse.payment_links?.iframe || null,
-//         },
-//       });
-//     } catch (err) {
-//       console.error("PAYMENT INIT ERROR →", err);
-//       res.status(500).json({
-//         success: false,
-//         message: "Payment init failed",
-//       });
-//     }
-//   });
-
-
-
-
-
-
-
-
-
-
-//   /**
-//  * @swagger
-//  * /api/payment/juspay/verify:
-//  *   get:
-//  *     summary: Juspay payment verification redirect
-//  *     tags:
-//  *       - Payment
-//  */
-// router.all("/verify", async (req, res) => {
-//   try {
-//     console.log("VERIFY HIT");
-//     console.log("QUERY →", req.query);
-//     console.log("BODY →", req.body);
-
-//     const orderId =
-//       req.query.order_id ||
-//       req.body.order_id ||
-//       req.body.orderId ||
-//       req.body?.order?.order_id;
-
-//     if (!orderId) {
-//       return res.status(400).send("Order ID missing");
-//     }
-
-//     const status = await juspay.order.status(orderId);
-
-//     if (status.status === "CHARGED") {
-//       await db.Payment.update(
-//         { status: "SUCCESS" },
-//         { where: { order_code: orderId } }
-//       );
-
-//       await db.ServiceOnBooking.update(
-//         { payment_status: "PAID" },
-//         { where: { order_id: orderId } }
-//       );
-
-//       return res.redirect(
-//         `https://bhsfrontend.vercel.app/payment-success?order_id=${orderId}`
-//       );
-//     }
-
-//     await db.Payment.update(
-//       { status: "FAILED" },
-//       { where: { order_code: orderId } }
-//     );
-
-//     await db.ServiceOnBooking.update(
-//       { payment_status: "FAILED" },
-//       { where: { order_id: orderId } }
-//     );
-
-//     return res.redirect(
-//       `https://bhsfrontend.vercel.app/payment-failed?order_id=${orderId}`
-//     );
-//   } catch (err) {
-//     console.error("VERIFY ERROR →", err);
-//     return res.redirect("https://bhsfrontend.vercel.app/payment-failed");
-//   }
-// });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // /**
-// //  * @swagger
-// //  * /api/payment/juspay/response:
-// //  *   get:
-// //  *     summary: Juspay payment redirect
-// //  *     tags:
-// //  *       - Payment
-// //  *   post:
-// //  *     summary: Juspay payment webhook
-// //  *     tags:
-// //  *       - Payment
-// //  */
-// // router.all("/response", async (req, res) => {
-// //   const orderId = req.body.order_id || req.query.order_id || req.body.orderId;
-
-// //   if (!orderId) {
-// //     return res.status(400).send("Order ID missing");
-// //   }
-
-// //   const status = await juspay.order.status(orderId);
-
-// //   if (status.status === "CHARGED") {
-// //     return res.redirect("https://bhsfrontend.vercel.app/payment-success");
-// //   }
-// //   return res.redirect("https://bhsfrontend.vercel.app/payment-failed");
-// // });
-
-// module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/// deployed 2nd stage ////
-///// currently working both bookingID and the wallet recharge ////
-
-// const express = require("express");
-// const db = require("../models");
-// const router = express.Router();
-// const juspay = require("./juspay");
+const express = require("express");
+const db = require("../models");
+const router = express.Router();
+const juspay = require("./juspay");
 
 // /**
 //  * @swagger
@@ -515,483 +74,14 @@
 //  *         description: Payment initiation failed
 //  */
 
-// router.post("/initiate", async (req, res) => {
-//   try {
-//     const {
-//       amount,
-//       customerId,
-//       email,
-//       mobile,
-//       service_code,
-//       subservice_code,
-//       address,
-//       date,
-//       time_slot,
-//       gst,
-//       emergency_price,
-//       quantity,
-//     } = req.body;
-
-//     if (!amount || !customerId || !subservice_code || !quantity) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Missing required fields",
-//       });
-//     }
-
-//     // ===================================================
-//     // ORDER ID LOGIC
-//     // ===================================================
-//     const lastBooking = await db.ServiceOnBooking.findOne({
-//       order: [["id", "DESC"]],
-//     });
-
-//     let order_id = "BD100001";
-//     if (lastBooking) {
-//       const lastNumber = parseInt(lastBooking.order_id.replace("BD", ""));
-//       order_id = `BD${lastNumber + 1}`;
-//     }
-
-//     // ===================================================
-//     // CREATE BOOKING
-//     // ===================================================
-//     const booking = await db.ServiceOnBooking.create({
-//       order_id,
-//       user_id: customerId,
-//       service_code,
-//       subservice_code,
-//       address,
-//       date,
-//       time_slot,
-//       gst,
-//       emergency_price: emergency_price || 0,
-//       quantity,
-//       total_price: amount,
-//       payment_method: "ONLINE",
-//       payment_status: "INITIATED",
-//     });
-
-//     // ===================================================
-//     // CREATE PAYMENT ENTRY
-//     // ===================================================
-//     await db.Payment.create({
-//       booking_id: booking.id,
-//       order_code: order_id,
-//       amount,
-//       customer_id: customerId,
-//       initiated_at: new Date(),
-//       status: "INITIATED",
-//     });
-
-//     // ===================================================
-//     // INITIATE JUSPAY PAYMENT
-//     // ===================================================
-//     const juspayResponse = await juspay.order.create({
-//       order_id: order_id,
-//       amount: Number(amount).toFixed(2),
-//       currency: "INR",
-//       customer_id: String(customerId),
-//       customer_email: email,
-//       customer_phone: mobile,
-//       // Browser redirect URL for after payment
-//       // return_url: `${process.env.BASE_URL}/api/payment/juspay/redirect?order_id=${order_id}`,
-//       return_url: `${process.env.BASE_URL}/api/payment/juspay/redirect`,
-//     });
-
-//     // ===================================================
-//     // RESPONSE TO FRONTEND
-//     // ===================================================
-//     return res.status(200).json({
-//       success: true,
-//       orderId: order_id,
-//       juspay_id: juspayResponse.id,
-//       status: juspayResponse.status,
-//       payment_urls: {
-//         web: juspayResponse.payment_links?.web || null,
-//         mobile: juspayResponse.payment_links?.mobile || null,
-//         iframe: juspayResponse.payment_links?.iframe || null,
-//       },
-//     });
-//   } catch (err) {
-//     console.error("PAYMENT INIT ERROR →", err);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Payment init failed",
-//     });
-//   }
-// });
-
-
-
-
-
-
-
-
-
-
-// // /**
-// //  * JUSPAY WEBHOOK (POST)
-// //  * Server → server callback from Juspay
-// //  */
-// // router.post("/webhook", async (req, res) => {
-// //   try {
-// //     console.log("JUSPAY WEBHOOK BODY:", req.body);
-
-// //     const orderId =
-// //       req.body.order_id || req.body.orderId || req.body.merchant_order_id;
-
-// //     if (!orderId) return res.sendStatus(200);
-
-// //     const status = await juspay.order.status(orderId);
-
-// //     if (status.status === "CHARGED") {
-// //       // Update payment only if not already SUCCESS
-// //       const payment = await db.Payment.findOne({
-// //         where: { order_code: orderId },
-// //       });
-// //       if (payment && payment.status !== "SUCCESS") {
-// //         await db.Payment.update(
-// //           { status: "SUCCESS" },
-// //           { where: { order_code: orderId } }
-// //         );
-
-// //         await db.ServiceOnBooking.update(
-// //           { payment_status: "PAID" },
-// //           { where: { order_id: orderId } }
-// //         );
-// //       }
-// //     } else if (status.status === "FAILED") {
-// //       await db.Payment.update(
-// //         { status: "FAILED" },
-// //         { where: { order_code: orderId } }
-// //       );
-
-// //       await db.ServiceOnBooking.update(
-// //         { payment_status: "FAILED" },
-// //         { where: { order_id: orderId } }
-// //       );
-// //     }
-
-// //     return res.sendStatus(200);
-// //   } catch (err) {
-// //     console.error("WEBHOOK ERROR →", err);
-// //     return res.sendStatus(500);
-// //   }
-// // });
-
-
-
-
-
-
-// /**
-//  * JUSPAY WEBHOOK (POST)
-//  * Handles BOTH:
-//  * 1. Service Booking Payments (BDxxxx)
-//  * 2. Wallet Top-ups (WLxxxx)
-//  */
-// router.post("/webhook", async (req, res) => {
-//   try {
-//     console.log("JUSPAY WEBHOOK BODY:", req.body);
-
-//     const orderId =
-//       req.body.order_id || req.body.orderId || req.body.merchant_order_id;
-
-//     if (!orderId) return res.sendStatus(200);
-
-//     const statusResp = await juspay.order.status(orderId);
-
-//     /* =======================
-//        BOOKING PAYMENT (UNCHANGED)
-//     ======================= */
-//     if (orderId.startsWith("BD")) {
-//       if (statusResp.status === "CHARGED") {
-//         const payment = await db.Payment.findOne({
-//           where: { order_code: orderId },
-//         });
-
-//         if (payment && payment.status !== "SUCCESS") {
-//           await db.Payment.update(
-//             { status: "SUCCESS" },
-//             { where: { order_code: orderId } }
-//           );
-
-//           await db.ServiceOnBooking.update(
-//             { payment_status: "PAID" },
-//             { where: { order_id: orderId } }
-//           );
-//         }
-//       } else if (statusResp.status === "FAILED") {
-//         await db.Payment.update(
-//           { status: "FAILED" },
-//           { where: { order_code: orderId } }
-//         );
-
-//         await db.ServiceOnBooking.update(
-//           { payment_status: "FAILED" },
-//           { where: { order_id: orderId } }
-//         );
-//       }
-//     }
-
-//     /* =======================
-//        WALLET TOP-UP (NEW)
-//     ======================= */
-//     if (orderId.startsWith("WL")) {
-//       const txn = await db.WalletTransaction.findOne({
-//         where: { order_id: orderId },
-//       });
-
-//       // Safety: already processed
-//       if (!txn || txn.status === "SUCCESS") {
-//         return res.sendStatus(200);
-//       }
-
-//       if (statusResp.status === "CHARGED") {
-//         const wallet = await db.TechnicianWallet.findByPk(txn.wallet_id);
-
-//         await wallet.update({
-//           balance: Number(wallet.balance) + Number(txn.amount),
-//         });
-
-//         await txn.update({ status: "SUCCESS" });
-//       } else if (statusResp.status === "FAILED") {
-//         await txn.update({ status: "FAILED" });
-//       }
-//     }
-
-//     return res.sendStatus(200);
-//   } catch (err) {
-//     console.error("WEBHOOK ERROR →", err);
-//     return res.sendStatus(500);
-//   }
-// });
-
-
-
-
-
-
-
-
-
-
-
-
-// /**
-//  * BROWSER REDIRECT (GET)
-//  * Redirect user to Thank You page with orderId
-//  */
-// // router.get("/redirect", async (req, res) => {
-// //   const { order_id } = req.query;
-
-// //   if (!order_id) {
-// //     return res.redirect("https://bhsfrontend.vercel.app/payment-failed");
-// //   }
-
-// //   try {
-// //     const payment = await db.Payment.findOne({
-// //       where: { order_code: order_id },
-// //     });
-
-// //     if (payment?.status === "SUCCESS") {
-// //       // ✅ Redirect to Thank You page with orderId
-// //       return res.redirect(
-// //         `https://bhsfrontend.vercel.app/thank-you?order_id=${order_id}`
-// //       );
-// //     }
-
-// //     // If payment failed or not found
-// //     return res.redirect(
-// //       `https://bhsfrontend.vercel.app/payment-failed?order_id=${order_id}`
-// //     );
-// //   } catch (err) {
-// //     console.error("REDIRECT ERROR →", err);
-// //     return res.redirect("https://bhsfrontend.vercel.app/payment-failed");
-// //   }
-// // });
-
-
-
-// /**
-//  * BROWSER REDIRECT (GET + POST)
-//  * Juspay redirects user after payment
-//  */
-// // router.all("/redirect", async (req, res) => {
-// //   try {
-// //     console.log("REDIRECT HIT");
-// //     console.log("METHOD:", req.method);
-// //     console.log("QUERY:", req.query);
-// //     console.log("BODY:", req.body);
-
-// //     const order_id =
-// //       req.query.order_id ||
-// //       req.body.order_id ||
-// //       req.body.merchant_order_id;
-
-// //     if (!order_id) {
-// //       console.log("No Order ID Found");
-// //       return res.redirect("http://localhost:3000/payment-failed");
-// //     }
-
-// //     console.log("Order ID:", order_id);
-
-// //     // Check booking payment
-// //     const payment = await db.Payment.findOne({
-// //       where: { order_code: order_id },
-// //     });
-
-// //     console.log("Payment Record:", payment?.status);
-
-// //     if (payment && payment.status === "SUCCESS") {
-// //       console.log("Payment SUCCESS");
-
-// //       return res.redirect(
-// //         `http://localhost:3000/thank-you?order_id=${order_id}`
-// //       );
-// //     }
-
-// //     console.log("Payment NOT SUCCESS");
-
-// //     return res.redirect(
-// //       `http://localhost:3000/payment-failed?order_id=${order_id}`
-// //     );
-// //   } catch (err) {
-// //     console.error("REDIRECT ERROR:", err);
-
-// //     return res.redirect(
-// //       "http://localhost:3000/payment-failed"
-// //     );
-// //   }
-// // });
-
-
-
-
-
-
-
-// router.all("/redirect", async (req, res) => {
-//   try {
-//     console.log("========== REDIRECT HIT ==========");
-//     console.log("METHOD:", req.method);
-//     console.log("QUERY:", req.query);
-//     console.log("BODY:", req.body);
-//     console.log("==================================");
-
-//     const order_id =
-//       req.query.order_id ||
-//       req.body.order_id ||
-//       req.body.orderId ||
-//       req.body.merchant_order_id;
-
-//     if (!order_id) {
-//       console.log("❌ No order_id received");
-//       return res.redirect("http://localhost:3000/payment-failed");
-//     }
-
-//     console.log("Order ID:", order_id);
-
-//     const payment = await db.Payment.findOne({
-//       where: { order_code: order_id },
-//     });
-
-//     console.log("Payment Status:", payment?.status);
-
-//     if (payment?.status === "SUCCESS") {
-//       return res.redirect(
-//         `http://localhost:3000/thank-you?order_id=${order_id}`
-//       );
-//     }
-
-//     return res.redirect(
-//       `http://localhost:3000/payment-failed?order_id=${order_id}`
-//     );
-//   } catch (err) {
-//     console.error("REDIRECT ERROR:", err);
-//     return res.redirect("http://localhost:3000/payment-failed");
-//   }
-// });
-
-
-
-// module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/////// tested 3rd stage /////
-
-
-const express = require("express");
-const db = require("../models");
-const router = express.Router();
-const juspay = require("./juspay");
 
 /**
  * @swagger
  * /payment/juspay/initiate:
  *   post:
- *     summary: Create service booking & initiate online payment
+ *     summary: Create service booking & initiate Juspay payment
  *     description: |
- *       Creates a booking with ONLINE payment and initiates Juspay order.
+ *       Creates one or multiple service bookings with ONLINE payment and initiates a Juspay order.
  *     tags:
  *       - Payment
  *     requestBody:
@@ -1001,14 +91,9 @@ const juspay = require("./juspay");
  *           schema:
  *             type: object
  *             required:
- *               - amount
  *               - customerId
- *               - subservice_code
- *               - quantity
+ *               - services
  *             properties:
- *               amount:
- *                 type: number
- *                 example: 499
  *               customerId:
  *                 type: integer
  *                 example: 23
@@ -1018,17 +103,12 @@ const juspay = require("./juspay");
  *               mobile:
  *                 type: string
  *                 example: "9999999999"
- *               service_code:
- *                 type: string
- *                 example: SRV001
- *               subservice_code:
- *                 type: string
- *                 example: SUB001
  *               address:
  *                 type: string
  *                 example: Bhubaneswar
  *               date:
  *                 type: string
+ *                 format: date
  *                 example: 2026-02-05
  *               time_slot:
  *                 type: string
@@ -1036,24 +116,96 @@ const juspay = require("./juspay");
  *               gst:
  *                 type: number
  *                 example: 18
- *               emergency_price:
- *                 type: number
- *                 example: 0
- *               quantity:
- *                 type: integer
- *                 example: 1
+ *               services:
+ *                 type: array
+ *                 description: List of services to book
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - service_code
+ *                     - subservice_code
+ *                     - quantity
+ *                   properties:
+ *                     service_code:
+ *                       type: string
+ *                       example: SRV001
+ *                     subservice_code:
+ *                       type: string
+ *                       example: SUB001
+ *                     quantity:
+ *                       type: integer
+ *                       example: 1
+ *                     emergency_price:
+ *                       type: number
+ *                       example: 0
  *     responses:
  *       200:
- *         description: Juspay payment initiated
+ *         description: Juspay payment initiated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 orderId:
+ *                   type: string
+ *                   example: BD1670000000000
+ *                 juspay_id:
+ *                   type: string
+ *                   example: jp_123456789
+ *                 status:
+ *                   type: string
+ *                   example: INITIATED
+ *                 payment_urls:
+ *                   type: object
+ *                   properties:
+ *                     web:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "https://juspay.in/web-link"
+ *                     mobile:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "https://juspay.in/mobile-link"
+ *                     iframe:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "https://juspay.in/iframe-link"
  *       400:
- *         description: Missing required fields
+ *         description: Missing required fields or invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Services array required"
  *       500:
  *         description: Payment initiation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Payment init failed"
  */
 
+
+/////////////////// current one code with a single order id showing ///////
 // router.post("/initiate", async (req, res) => {
 //   try {
-//     console.log("=========== INITIATE START ===========");
+//     console.log("\n=========== INITIATE START ===========");
 //     console.log("Request Body:", req.body);
 
 //     const {
@@ -1082,23 +234,58 @@ const juspay = require("./juspay");
 //     console.log("✔ Fields validated");
 
 //     // ===================================================
-//     // ORDER ID LOGIC
+//     // BASE URL FIX
 //     // ===================================================
-//     const lastBooking = await db.ServiceOnBooking.findOne({
-//       order: [["id", "DESC"]],
-//     });
+//     const BASE_URL = process.env.BASE_URL || "http://localhost:4000";
 
-//     let order_id = "BD100001";
-//     if (lastBooking) {
-//       const lastNumber = parseInt(lastBooking.order_id.replace("BD", ""));
-//       order_id = `BD${lastNumber + 1}`;
-//     }
+//     console.log("BASE_URL:", BASE_URL);
+//     console.log("ENV BASE_URL:", process.env.BASE_URL);
+
+//     // ===================================================
+//     // UNIQUE ORDER ID FIX (Prevents expired session)
+//     // ===================================================
+//     const order_id = `BD${Date.now()}`;
 
 //     console.log("Generated Order ID:", order_id);
+
+//     // =======================================
+//     // FETCH SUBSERVICE PRICE FROM DB
+//     // =======================================
+
+//     const subservice = await db.SubService.findOne({
+//       where: { subservice_code },
+//     });
+
+//     if (!subservice) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Subservice not found",
+//       });
+//     }
+
+//     const basePrice = Number(subservice.price);
+//     const qty = Number(quantity);
+//     const gstAmount = Number(gst || 0);
+//     const emergencyAmount = Number(emergency_price || 0);
+
+//     // =======================================
+//     // CALCULATE TOTAL PRICE
+//     // =======================================
+
+//     const baseTotal = basePrice * qty;
+//     const finalAmount = baseTotal + gstAmount + emergencyAmount;
+
+//     console.log("Base Price:", basePrice);
+//     console.log("Quantity:", qty);
+//     console.log("GST:", gstAmount);
+//     console.log("Emergency:", emergencyAmount);
+//     console.log("Final Amount:", finalAmount);
 
 //     // ===================================================
 //     // CREATE BOOKING
 //     // ===================================================
+//     console.log("Creating booking...");
+
 //     const booking = await db.ServiceOnBooking.create({
 //       order_id,
 //       user_id: customerId,
@@ -1110,7 +297,8 @@ const juspay = require("./juspay");
 //       gst,
 //       emergency_price: emergency_price || 0,
 //       quantity,
-//       total_price: amount,
+//       // total_price: amount,
+//       total_price: finalAmount,
 //       payment_method: "ONLINE",
 //       payment_status: "INITIATED",
 //     });
@@ -1120,10 +308,13 @@ const juspay = require("./juspay");
 //     // ===================================================
 //     // CREATE PAYMENT ENTRY
 //     // ===================================================
+//     console.log("Creating payment record...");
+
 //     await db.Payment.create({
 //       booking_id: booking.id,
 //       order_code: order_id,
-//       amount,
+//       // amount,
+//       amount: finalAmount,
 //       customer_id: customerId,
 //       initiated_at: new Date(),
 //       status: "INITIATED",
@@ -1136,24 +327,30 @@ const juspay = require("./juspay");
 //     // ===================================================
 //     console.log("Creating Juspay Order...");
 
-//     console.log("Using BASE_URL:", BASE_URL);
+//     // const returnUrl = `${BASE_URL}/api/payment/juspay/redirect`;
+
+//     const returnUrl = `${BASE_URL}/api/payment/juspay/redirect?platform=app`;
+
+//     console.log("Return URL:", returnUrl);
 
 //     const juspayResponse = await juspay.order.create({
 //       order_id: order_id,
-//       amount: Number(amount).toFixed(2),
+//       // amount: Number(amount).toFixed(2),
+//       amount: Number(finalAmount).toFixed(2),
 //       currency: "INR",
 //       customer_id: String(customerId),
 //       customer_email: email,
 //       customer_phone: mobile,
-//       return_url: `${process.env.BASE_URL}/api/payment/juspay/redirect`,
+//       return_url: returnUrl,
 //     });
 
 //     console.log("✔ Juspay Order Created");
 //     console.log("Juspay ID:", juspayResponse.id);
 //     console.log("Juspay Status:", juspayResponse.status);
 //     console.log("Payment URL:", juspayResponse.payment_links?.web);
+//     console.log("Expiry:", juspayResponse.order_expiry);
 
-//     console.log("=========== INITIATE END ===========");
+//     console.log("=========== INITIATE END ===========\n");
 
 //     return res.status(200).json({
 //       success: true,
@@ -1176,139 +373,148 @@ const juspay = require("./juspay");
 // });
 
 
-
-/////////////////// current one code with a single order id showing ///////
 router.post("/initiate", async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+
   try {
     console.log("\n=========== INITIATE START ===========");
     console.log("Request Body:", req.body);
 
     const {
-      amount,
+      services,
       customerId,
       email,
       mobile,
-      service_code,
-      subservice_code,
       address,
       date,
       time_slot,
       gst,
       emergency_price,
-      quantity,
     } = req.body;
 
-    if (!amount || !customerId || !subservice_code || !quantity) {
-      console.log("❌ Missing required fields");
+    if (!services || services.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "Services array required",
       });
     }
 
-    console.log("✔ Fields validated");
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        message: "customerId required",
+      });
+    }
 
-    // ===================================================
-    // BASE URL FIX
-    // ===================================================
     const BASE_URL = process.env.BASE_URL || "http://localhost:4000";
 
-    console.log("BASE_URL:", BASE_URL);
-    console.log("ENV BASE_URL:", process.env.BASE_URL);
-
-    // ===================================================
-    // UNIQUE ORDER ID FIX (Prevents expired session)
-    // ===================================================
     const order_id = `BD${Date.now()}`;
 
     console.log("Generated Order ID:", order_id);
 
-    // =======================================
-    // FETCH SUBSERVICE PRICE FROM DB
-    // =======================================
+    let finalAmount = 0;
 
-    const subservice = await db.SubService.findOne({
-      where: { subservice_code },
-    });
+    const bookingsToCreate = [];
 
-    if (!subservice) {
-      return res.status(404).json({
-        success: false,
-        message: "Subservice not found",
+    // =====================================
+    // FETCH ALL SUBSERVICES
+    // =====================================
+
+    for (const item of services) {
+      const subservice = await db.SubService.findOne({
+        where: { subservice_code: item.subservice_code },
+        transaction,
       });
+
+      if (!subservice) {
+        throw new Error(`Subservice not found: ${item.subservice_code}`);
+      }
+
+      // const basePrice = Number(subservice.price);
+      // const qty = Number(item.quantity || 1);
+
+      // const total = basePrice * qty;
+
+      // finalAmount += total;
+
+      const basePrice = Number(subservice.price);
+      const emergencyPrice = Number(item.emergency_price || 0);
+      const qty = Number(item.quantity || 1);
+
+      // if emergency price exists use it
+      const priceToUse = emergencyPrice > 0 ? emergencyPrice : basePrice;
+
+      const total = priceToUse * qty;
+
+      finalAmount += total;
+
+      bookingsToCreate.push({
+        order_id,
+        user_id: customerId,
+        service_code: item.service_code,
+        subservice_code: item.subservice_code,
+        address,
+        date,
+        time_slot,
+        gst: gst || 0,
+        // emergency_price: emergency_price || 0,
+        emergency_price: item.emergency_price || 0,
+        quantity: qty,
+        total_price: total,
+        payment_method: "ONLINE",
+        payment_status: "INITIATED",
+      });
+
+      console.log(
+        `Service ${item.subservice_code} → Price: ${basePrice} Qty: ${qty} Total: ${total}`
+      );
     }
 
-    const basePrice = Number(subservice.price);
-    const qty = Number(quantity);
     const gstAmount = Number(gst || 0);
-    const emergencyAmount = Number(emergency_price || 0);
+    // const emergencyAmount = Number(emergency_price || 0);
 
-    // =======================================
-    // CALCULATE TOTAL PRICE
-    // =======================================
+    // finalAmount = finalAmount + gstAmount + emergencyAmount;
 
-    const baseTotal = basePrice * qty;
-    const finalAmount = baseTotal + gstAmount + emergencyAmount;
+    finalAmount = finalAmount + gstAmount;
 
-    console.log("Base Price:", basePrice);
-    console.log("Quantity:", qty);
-    console.log("GST:", gstAmount);
-    console.log("Emergency:", emergencyAmount);
     console.log("Final Amount:", finalAmount);
 
-    // ===================================================
-    // CREATE BOOKING
-    // ===================================================
-    console.log("Creating booking...");
+    // =====================================
+    // CREATE BOOKINGS
+    // =====================================
 
-    const booking = await db.ServiceOnBooking.create({
-      order_id,
-      user_id: customerId,
-      service_code,
-      subservice_code,
-      address,
-      date,
-      time_slot,
-      gst,
-      emergency_price: emergency_price || 0,
-      quantity,
-      // total_price: amount,
-      total_price: finalAmount,
-      payment_method: "ONLINE",
-      payment_status: "INITIATED",
+    const bookings = await db.ServiceOnBooking.bulkCreate(bookingsToCreate, {
+      transaction,
     });
 
-    console.log("✔ Booking Created:", booking.id);
+    console.log("Bookings Created:", bookings.length);
 
-    // ===================================================
+    // =====================================
     // CREATE PAYMENT ENTRY
-    // ===================================================
-    console.log("Creating payment record...");
+    // =====================================
 
-    await db.Payment.create({
-      booking_id: booking.id,
-      order_code: order_id,
-      // amount,
-      amount: finalAmount,
-      customer_id: customerId,
-      initiated_at: new Date(),
-      status: "INITIATED",
-    });
+    await db.Payment.create(
+      {
+        booking_id: bookings[0].id,
+        order_code: order_id,
+        amount: finalAmount,
+        customer_id: customerId,
+        initiated_at: new Date(),
+        status: "INITIATED",
+      },
+      { transaction }
+    );
 
-    console.log("✔ Payment Record Created");
+    console.log("Payment Record Created");
 
-    // ===================================================
-    // INITIATE JUSPAY PAYMENT
-    // ===================================================
-    console.log("Creating Juspay Order...");
+    // =====================================
+    // JUSPAY ORDER
+    // =====================================
 
-    const returnUrl = `${BASE_URL}/api/payment/juspay/redirect`;
-
-    console.log("Return URL:", returnUrl);
+    const returnUrl = `${BASE_URL}/api/payment/juspay/redirect?platform=app`;
 
     const juspayResponse = await juspay.order.create({
       order_id: order_id,
-      // amount: Number(amount).toFixed(2),
       amount: Number(finalAmount).toFixed(2),
       currency: "INR",
       customer_id: String(customerId),
@@ -1317,11 +523,9 @@ router.post("/initiate", async (req, res) => {
       return_url: returnUrl,
     });
 
-    console.log("✔ Juspay Order Created");
-    console.log("Juspay ID:", juspayResponse.id);
-    console.log("Juspay Status:", juspayResponse.status);
-    console.log("Payment URL:", juspayResponse.payment_links?.web);
-    console.log("Expiry:", juspayResponse.order_expiry);
+    console.log("Juspay Order Created:", juspayResponse.id);
+
+    await transaction.commit();
 
     console.log("=========== INITIATE END ===========\n");
 
@@ -1337,13 +541,215 @@ router.post("/initiate", async (req, res) => {
       },
     });
   } catch (err) {
+    await transaction.rollback();
+
     console.error("❌ PAYMENT INIT ERROR →", err);
+
     return res.status(500).json({
       success: false,
-      message: "Payment init failed",
+      message: err.message || "Payment init failed",
     });
   }
 });
+
+
+
+
+
+
+
+// router.post("/initiate", async (req, res) => {
+//   const transaction = await db.sequelize.transaction();
+
+//   try {
+//     console.log("\n=========== INITIATE START ===========");
+//     console.log("Request Body:", req.body);
+
+//     const {
+//       services,
+//       customerId,
+//       email,
+//       mobile,
+//       address,
+//       date,
+//       time_slot,
+//       emergency_price,
+//     } = req.body;
+
+//     if (!services || services.length === 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Services array required",
+//       });
+//     }
+
+//     if (!customerId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "customerId required",
+//       });
+//     }
+
+//     const BASE_URL = process.env.BASE_URL || "http://localhost:4000";
+
+//     const order_id = `BD${Date.now()}`;
+
+//     console.log("Generated Order ID:", order_id);
+
+//     let subtotal = 0;
+
+//     const bookingsToCreate = [];
+
+//     // =====================================
+//     // FETCH ALL SUBSERVICES
+//     // =====================================
+
+//     for (const item of services) {
+//       const subservice = await db.SubService.findOne({
+//         where: { subservice_code: item.subservice_code },
+//         transaction,
+//       });
+
+//       if (!subservice) {
+//         throw new Error(`Subservice not found: ${item.subservice_code}`);
+//       }
+
+//       const basePrice = Number(subservice.price);
+//       const qty = Number(item.quantity || 1);
+
+//       const serviceTotal = basePrice * qty;
+
+//       subtotal += serviceTotal;
+
+//       // bookingsToCreate.push({
+//       //   order_id,
+//       //   user_id: customerId,
+//       //   service_code: item.service_code,
+//       //   subservice_code: item.subservice_code,
+//       //   address,
+//       //   date,
+//       //   time_slot,
+//       //   quantity: qty,
+//       //   total_price: serviceTotal,
+//       //   emergency_price: emergency_price || 0,
+//       //   payment_method: "ONLINE",
+//       //   payment_status: "INITIATED",
+//       // });
+
+
+
+//       bookingsToCreate.push({
+//         order_id,
+//         user_id: customerId,
+//         service_code: item.service_code,
+//         subservice_code: item.subservice_code,
+//         address,
+//         date,
+//         time_slot,
+
+//         gst: Number(gst || 0), // ⭐ IMPORTANT FIX
+
+//         emergency_price: emergency_price || 0,
+//         quantity: qty,
+//         total_price: total,
+
+//         payment_method: "ONLINE",
+//         payment_status: "INITIATED",
+//       });
+
+//       console.log(
+//         `Service ${item.subservice_code} → Price: ${basePrice} Qty: ${qty} Total: ${serviceTotal}`
+//       );
+//     }
+
+//     // =====================================
+//     // CALCULATE GST + FINAL AMOUNT
+//     // =====================================
+
+//     const gstAmount = subtotal * 0.18;
+//     const emergencyAmount = Number(emergency_price || 0);
+
+//     const finalAmount = subtotal + gstAmount + emergencyAmount;
+
+//     console.log("========== PAYMENT CALCULATION ==========");
+//     console.log("Subtotal:", subtotal);
+//     console.log("GST (18%):", gstAmount);
+//     console.log("Emergency:", emergencyAmount);
+//     console.log("Final Amount:", finalAmount);
+//     console.log("=========================================");
+
+//     // =====================================
+//     // CREATE BOOKINGS
+//     // =====================================
+
+//     const bookings = await db.ServiceOnBooking.bulkCreate(bookingsToCreate, {
+//       transaction,
+//     });
+
+//     console.log("Bookings Created:", bookings.length);
+
+//     // =====================================
+//     // CREATE PAYMENT ENTRY
+//     // =====================================
+
+//     await db.Payment.create(
+//       {
+//         booking_id: bookings[0].id,
+//         order_code: order_id,
+//         amount: finalAmount,
+//         customer_id: customerId,
+//         initiated_at: new Date(),
+//         status: "INITIATED",
+//       },
+//       { transaction }
+//     );
+
+//     console.log("Payment Record Created");
+
+//     // =====================================
+//     // JUSPAY ORDER
+//     // =====================================
+
+//     const returnUrl = `${BASE_URL}/api/payment/juspay/redirect?platform=app`;
+
+//     const juspayResponse = await juspay.order.create({
+//       order_id: order_id,
+//       amount: parseFloat(finalAmount).toFixed(2),
+//       currency: "INR",
+//       customer_id: String(customerId),
+//       customer_email: email,
+//       customer_phone: mobile,
+//       return_url: returnUrl,
+//     });
+
+//     console.log("Juspay Order Created:", juspayResponse.id);
+
+//     await transaction.commit();
+
+//     console.log("=========== INITIATE END ===========\n");
+
+//     return res.status(200).json({
+//       success: true,
+//       orderId: order_id,
+//       juspay_id: juspayResponse.id,
+//       status: juspayResponse.status,
+//       payment_urls: {
+//         web: juspayResponse.payment_links?.web || null,
+//         mobile: juspayResponse.payment_links?.mobile || null,
+//         iframe: juspayResponse.payment_links?.iframe || null,
+//       },
+//     });
+//   } catch (err) {
+//     await transaction.rollback();
+
+//     console.error("❌ PAYMENT INIT ERROR →", err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message || "Payment init failed",
+//     });
+//   }
+// });
 
 
 
@@ -1420,183 +826,6 @@ router.post("/webhook", async (req, res) => {
  * BROWSER REDIRECT (GET)
  * Redirect user to Thank You page with orderId
  */
-// router.all("/redirect", async (req, res) => {
-//   try {
-//     console.log("=========== REDIRECT START ===========");
-//     console.log("Method:", req.method);
-//     console.log("Query:", req.query);
-//     console.log("Body:", req.body);
-
-//     const order_id =
-//       req.query.order_id ||
-//       req.body.order_id ||
-//       req.body.orderId ||
-//       req.body.merchant_order_id;
-
-//     console.log("Received Order ID:", order_id);
-
-//     if (!order_id) {
-//       console.log("❌ No Order ID in redirect");
-//       return res.redirect("http://localhost:3000/payment-failed");
-//     }
-
-//     const payment = await db.Payment.findOne({
-//       where: { order_code: order_id },
-//     });
-
-//     console.log("Payment Record:", payment);
-
-//     if (payment?.status === "SUCCESS") {
-//       console.log("✔ Redirecting to SUCCESS");
-
-//       return res.redirect(
-//         `http://localhost:3000/thank-you?order_id=${order_id}`
-//       );
-//     }
-
-//     console.log("❌ Redirecting to FAILED");
-
-//     return res.redirect(
-//       `http://localhost:3000/payment-failed?order_id=${order_id}`
-//     );
-//   } catch (err) {
-//     console.error("❌ REDIRECT ERROR:", err);
-
-//     return res.redirect("http://localhost:3000/payment-failed");
-//   }
-// });
-
-
-
-////////// fixed version /////
-// router.all("/redirect", async (req, res) => {
-//   try {
-//     console.log("\n=========== REDIRECT START ===========");
-//     console.log("Method:", req.method);
-//     console.log("Query:", req.query);
-//     console.log("Body:", req.body);
-
-//     const order_id =
-//       req.query.order_id || req.body.order_id || req.body.merchant_order_id;
-
-//     const paymentStatus = req.body.status || req.query.status;
-
-//     console.log("Received Order ID:", order_id);
-//     console.log("Payment Status From Juspay:", paymentStatus);
-
-//     if (!order_id) {
-//       console.log("❌ No Order ID");
-//       return res.redirect("http://localhost:3000/payment-failed");
-//     }
-
-//     const payment = await db.Payment.findOne({
-//       where: { order_code: order_id },
-//     });
-
-//     console.log("DB Payment Status:", payment?.status);
-
-//     // ✅ UPDATE STATUS IF CHARGED
-//     if (paymentStatus === "CHARGED") {
-//       console.log("Updating payment to SUCCESS...");
-
-//       await db.Payment.update(
-//         { status: "SUCCESS" },
-//         { where: { order_code: order_id } }
-//       );
-
-//       await db.ServiceOnBooking.update(
-//         { payment_status: "PAID" },
-//         { where: { order_id: order_id } }
-//       );
-
-//       console.log("✔ Payment Updated SUCCESS");
-
-//       return res.redirect(
-//         `http://localhost:3000/thank-you?order_id=${order_id}`
-//       );
-//     }
-
-//     console.log("❌ Payment Failed");
-
-//     await db.Payment.update(
-//       { status: "FAILED" },
-//       { where: { order_code: order_id } }
-//     );
-
-//     return res.redirect(
-//       `http://localhost:3000/payment-failed?order_id=${order_id}`
-//     );
-//   } catch (err) {
-//     console.error("REDIRECT ERROR:", err);
-
-//     return res.redirect("http://localhost:3000/payment-failed");
-//   }
-// });
-
-
-
-
-
-
-// router.all("/redirect", async (req, res) => {
-//   try {
-//     console.log("\n=========== REDIRECT START ===========");
-//     console.log("Method:", req.method);
-//     console.log("Query:", req.query);
-//     console.log("Body:", req.body);
-
-//     const order_id = req.body.order_id || req.query.order_id;
-
-//     const paymentStatus = req.body.status || req.query.status;
-
-//     console.log("Received Order ID:", order_id);
-//     console.log("Payment Status:", paymentStatus);
-
-//     const payment = await db.Payment.findOne({
-//       where: { order_code: order_id },
-//     });
-
-//     console.log("DB Payment Status:", payment?.status);
-
-//     if (paymentStatus === "CHARGED") {
-//       console.log("Updating payment SUCCESS...");
-
-//       await db.Payment.update(
-//         { status: "SUCCESS" },
-//         { where: { order_code: order_id } }
-//       );
-
-//       await db.ServiceOnBooking.update(
-//         { payment_status: "PAID" },
-//         { where: { order_id: order_id } }
-//       );
-
-//       console.log("✔ Payment SUCCESS");
-//       console.log("✔ Booking PAID");
-
-//       return res.redirect(
-//         `http://localhost:3000/thank-you?order_id=${order_id}`
-//       );
-//     }
-
-//     console.log("❌ Payment FAILED");
-
-//     await db.Payment.update(
-//       { status: "FAILED" },
-//       { where: { order_code: order_id } }
-//     );
-
-//     return res.redirect(
-//       `http://localhost:3000/payment-failed?order_id=${order_id}`
-//     );
-//   } catch (err) {
-//     console.error("REDIRECT ERROR:", err);
-
-//     return res.redirect("http://localhost:3000/payment-failed");
-//   }
-// });
-
-
 
 
 router.all("/redirect", async (req, res) => {
