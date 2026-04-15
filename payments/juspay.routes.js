@@ -224,7 +224,8 @@ router.post("/initiate", async (req, res) => {
       order_id,
 
       // ✅ CONVERT TO PAISE (VERY IMPORTANT)
-      amount: Math.round(finalAmount * 100),
+      // amount: Math.round(finalAmount * 100),
+      amount: finalAmount.toFixed(2),
 
       currency: "INR",
       customer_id: String(customerId),
