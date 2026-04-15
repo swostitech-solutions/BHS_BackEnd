@@ -441,12 +441,121 @@ exports.getBookingsByTechnicianId = async (req, res) => {
 
 
 // GET booking by order_id (SAME RESPONSE AS getAllBookings)
+// exports.getBookingByOrderId = async (req, res) => {
+//   try {
+//     const { order_id } = req.params;
+
+//     const bookingInstance = await ServiceOnBooking.findOne({
+//       where: { order_id },
+//       include: [
+//         { model: Service, as: "service" },
+//         { model: SubService, as: "subservice" },
+//         {
+//           model: User,
+//           attributes: ["id", "username", "email", "name", "mobile", "address"],
+//         },
+//         {
+//           model: Technician,
+//           as: "technician",
+//           include: [
+//             {
+//               model: User,
+//               as: "user",
+//               attributes: [
+//                 "id",
+//                 "name",
+//                 "email",
+//                 "mobile",
+//                 "address",
+//                 "username",
+//                 "roleId",
+//               ],
+//             },
+//           ],
+//           attributes: [
+//             "skill",
+//             "experience",
+//             "status",
+//             "aadharCardNo",
+//             "panCardNo",
+//             "bankName",
+//             "ifscNo",
+//             "branchName",
+//             "timeDuration",
+//             "emergencyAvailable",
+//             "techCategory",
+//           ],
+//         },
+//       ],
+//     });
+
+//     if (!bookingInstance) {
+//       return res.status(404).json({ message: "Booking not found" });
+//     }
+
+//     // Convert to JSON
+//     const booking = bookingInstance.toJSON();
+//     const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+//     // 🔥 SAME MERGE LOGIC AS getAllBookings
+//     if (booking.technician && booking.technician.user) {
+//       const user = booking.technician.user;
+
+//       booking.technician = {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         mobile: user.mobile,
+//         address: user.address,
+//         username: user.username,
+//         roleId: user.roleId,
+//         roleName: "Technician",
+//         technicianDetails: {
+//           skill: booking.technician.skill,
+//           experience: booking.technician.experience,
+//           status: booking.technician.status,
+//           aadharCardNo: booking.technician.aadharCardNo,
+//           panCardNo: booking.technician.panCardNo,
+//           bankName: booking.technician.bankName,
+//           ifscNo: booking.technician.ifscNo,
+//           branchName: booking.technician.branchName,
+//           timeDuration: booking.technician.timeDuration,
+//           emergencyAvailable: booking.technician.emergencyAvailable,
+//           techCategory: booking.technician.techCategory,
+//         },
+//       };
+
+//       booking.technician_id = user.id;
+//     }
+
+//     // ✅ FIX: Attach FULL image URL
+//     booking.image = booking.image ? baseUrl + booking.image : null;
+
+//     // ✅ (Optional but recommended) attach service & subservice images
+//     if (booking.service?.image) {
+//       booking.service.image =
+//         baseUrl + "/uploads/services/" + booking.service.image;
+//     }
+
+//     if (booking.subservice?.image) {
+//       booking.subservice.image = baseUrl + booking.subservice.image;
+//     }
+
+//     res.status(200).json({ booking });
+//   } catch (err) {
+//     console.error("GET BOOKING BY ORDER_ID ERROR →", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
+
 exports.getBookingByOrderId = async (req, res) => {
   try {
     const { order_id } = req.params;
 
-    const bookingInstance = await ServiceOnBooking.findOne({
-      where: { order_id },
+    const bookingInstances = await ServiceOnBooking.findAll({
+      where: { order_id }, // ✅ FIX: findAll instead of findOne
       include: [
         { model: Service, as: "service" },
         { model: SubService, as: "subservice" },
@@ -487,61 +596,70 @@ exports.getBookingByOrderId = async (req, res) => {
           ],
         },
       ],
+      order: [["createdAt", "ASC"]],
     });
 
-    if (!bookingInstance) {
+    if (!bookingInstances.length) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // Convert to JSON
-    const booking = bookingInstance.toJSON();
     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    // 🔥 SAME MERGE LOGIC AS getAllBookings
-    if (booking.technician && booking.technician.user) {
-      const user = booking.technician.user;
+    // 🔥 FORMAT ALL BOOKINGS
+    const bookings = bookingInstances.map((b) => {
+      const booking = b.toJSON();
 
-      booking.technician = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        mobile: user.mobile,
-        address: user.address,
-        username: user.username,
-        roleId: user.roleId,
-        roleName: "Technician",
-        technicianDetails: {
-          skill: booking.technician.skill,
-          experience: booking.technician.experience,
-          status: booking.technician.status,
-          aadharCardNo: booking.technician.aadharCardNo,
-          panCardNo: booking.technician.panCardNo,
-          bankName: booking.technician.bankName,
-          ifscNo: booking.technician.ifscNo,
-          branchName: booking.technician.branchName,
-          timeDuration: booking.technician.timeDuration,
-          emergencyAvailable: booking.technician.emergencyAvailable,
-          techCategory: booking.technician.techCategory,
-        },
-      };
+      // ✅ MERGE TECHNICIAN USER
+      if (booking.technician && booking.technician.user) {
+        const user = booking.technician.user;
 
-      booking.technician_id = user.id;
-    }
+        booking.technician = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          mobile: user.mobile,
+          address: user.address,
+          username: user.username,
+          roleId: user.roleId,
+          roleName: "Technician",
+          technicianDetails: {
+            skill: booking.technician.skill,
+            experience: booking.technician.experience,
+            status: booking.technician.status,
+            aadharCardNo: booking.technician.aadharCardNo,
+            panCardNo: booking.technician.panCardNo,
+            bankName: booking.technician.bankName,
+            ifscNo: booking.technician.ifscNo,
+            branchName: booking.technician.branchName,
+            timeDuration: booking.technician.timeDuration,
+            emergencyAvailable: booking.technician.emergencyAvailable,
+            techCategory: booking.technician.techCategory,
+          },
+        };
 
-    // ✅ FIX: Attach FULL image URL
-    booking.image = booking.image ? baseUrl + booking.image : null;
+        booking.technician_id = user.id;
+      }
 
-    // ✅ (Optional but recommended) attach service & subservice images
-    if (booking.service?.image) {
-      booking.service.image =
-        baseUrl + "/uploads/services/" + booking.service.image;
-    }
+      // ✅ IMAGE FIX
+      booking.image = booking.image ? baseUrl + booking.image : null;
 
-    if (booking.subservice?.image) {
-      booking.subservice.image = baseUrl + booking.subservice.image;
-    }
+      if (booking.service?.image) {
+        booking.service.image =
+          baseUrl + "/uploads/services/" + booking.service.image;
+      }
 
-    res.status(200).json({ booking });
+      if (booking.subservice?.image) {
+        booking.subservice.image = baseUrl + booking.subservice.image;
+      }
+
+      return booking;
+    });
+
+    return res.status(200).json({
+      order_id,
+      total_services: bookings.length,
+      bookings, // ✅ ARRAY OF SERVICES
+    });
   } catch (err) {
     console.error("GET BOOKING BY ORDER_ID ERROR →", err);
     res.status(500).json({ message: "Server error" });
@@ -662,49 +780,413 @@ exports.getBookingsByServiceCode = async (req, res) => {
 
 
 //accept Booking 
+// exports.acceptBooking = async (req, res) => {
+//   try {
+//     const { order_id } = req.params;
+//     const { technician_id, opinion = 1 } = req.body; // default = 1 (Accept)
+
+//     if (!technician_id) {
+//       return res.status(400).json({ message: "technician_id is required" });
+//     }
+
+//     // Check booking exists
+//     const booking = await ServiceOnBooking.findOne({ where: { order_id } });
+//     if (!booking) {
+//       return res.status(404).json({ message: "Booking not found" });
+//     }
+
+//     // Opinion handling
+//     if (![1, 2].includes(opinion)) {
+//       return res
+//         .status(400)
+//         .json({ message: "Invalid opinion (1=Accept, 2=Reject)" });
+//     }
+
+//     if (opinion === 2) {
+//       // REJECT
+//       booking.technician_allocated = false;
+//       booking.technician_id = null;
+//       booking.work_status = 0; // optional: 0 = Rejected    1 = accept, 2 = reject
+//       await booking.save();
+
+//       return res.status(200).json({
+//         message: "Booking rejected by technician",
+//         booking,
+//       });
+//     }
+
+//     // ACCEPT flow
+//     if (booking.technician_allocated) {
+//       return res
+//         .status(400)
+//         .json({ message: "Booking already accepted by a technician" });
+//     }
+
+//     // Find Technician by userId
+//     let technician = await Technician.findOne({
+//       where: { userId: technician_id },
+//       include: [
+//         {
+//           model: User,
+//           as: "user",
+//           attributes: [
+//             "id",
+//             "name",
+//             "email",
+//             "mobile",
+//             "address",
+//             "username",
+//             "roleId",
+//           ],
+//         },
+//       ],
+//     });
+
+//     if (!technician) {
+//       // Auto-create technician row if it doesn't exist
+//       technician = await Technician.create({
+//         userId: technician_id,
+//         status: "ACCEPT",
+//       });
+
+//       technician.user = await User.findByPk(technician_id, {
+//         attributes: [
+//           "id",
+//           "name",
+//           "email",
+//           "mobile",
+//           "address",
+//           "username",
+//           "roleId",
+//         ],
+//       });
+//     }
+
+//     // Update booking
+//     booking.technician_allocated = true;
+//     booking.technician_id = technician.id; // store Technician PK (FK)
+//     booking.work_status = 1; // 1 = Pending
+//     booking.work_status_code = null;
+//     await booking.save();
+
+//     // Fetch updated booking with associations
+//     const updatedBooking = await ServiceOnBooking.findByPk(booking.id, {
+//       include: [
+//         { model: Service, as: "service" },
+//         { model: SubService, as: "subservice" },
+//         {
+//           model: User,
+//           attributes: ["id", "username", "email", "name", "mobile", "address"],
+//         },
+//         {
+//           model: Technician,
+//           as: "technician",
+//           include: [
+//             {
+//               model: User,
+//               as: "user",
+//               attributes: [
+//                 "id",
+//                 "name",
+//                 "email",
+//                 "mobile",
+//                 "address",
+//                 "username",
+//                 "roleId",
+//               ],
+//             },
+//           ],
+//           attributes: [
+//             "skill",
+//             "experience",
+//             "status",
+//             "aadharCardNo",
+//             "panCardNo",
+//             "bankName",
+//             "ifscNo",
+//             "branchName",
+//             "timeDuration",
+//             "emergencyAvailable",
+//             "techCategory",
+//           ],
+//         },
+//       ],
+//     });
+
+//     // Merge user info into technician object
+//     const bookingData = updatedBooking.toJSON();
+//     if (bookingData.technician && bookingData.technician.user) {
+//       const user = bookingData.technician.user;
+//       bookingData.technician = {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         mobile: user.mobile,
+//         address: user.address,
+//         username: user.username,
+//         roleId: user.roleId,
+//         roleName: "Technician",
+//         technicianDetails: {
+//           skill: bookingData.technician.skill,
+//           experience: bookingData.technician.experience,
+//           status: bookingData.technician.status,
+//           aadharCardNo: bookingData.technician.aadharCardNo,
+//           panCardNo: bookingData.technician.panCardNo,
+//           bankName: bookingData.technician.bankName,
+//           ifscNo: bookingData.technician.ifscNo,
+//           branchName: bookingData.technician.branchName,
+//           timeDuration: bookingData.technician.timeDuration,
+//           emergencyAvailable: bookingData.technician.emergencyAvailable,
+//           techCategory: bookingData.technician.techCategory,
+//         },
+//       };
+//       bookingData.technician_id = user.id;
+//     }
+
+//     res.status(200).json({
+//       message: "Booking accepted by technician",
+//       booking: bookingData,
+//     });
+//   } catch (err) {
+//     console.error("ACCEPT BOOKING ERROR →", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
+
+////// 2nd correct ///
+
+// exports.acceptBooking = async (req, res) => {
+//   try {
+//     const { id } = req.params; // ✅ FIX: use ID instead of order_id
+//     const { technician_id, opinion = 1 } = req.body;
+
+//     if (!technician_id) {
+//       return res.status(400).json({ message: "technician_id is required" });
+//     }
+
+//     const booking = await ServiceOnBooking.findByPk(id);
+
+//     if (!booking) {
+//       return res.status(404).json({ message: "Booking not found" });
+//     }
+
+//     if (![1, 2].includes(opinion)) {
+//       return res.status(400).json({
+//         message: "Invalid opinion (1=Accept, 2=Reject)",
+//       });
+//     }
+
+//     // ✅ REJECT
+//     if (opinion === 2) {
+//       await booking.update({
+//         technician_allocated: false,
+//         technician_id: null,
+//         work_status: 0,
+//       });
+
+//       return res.status(200).json({
+//         message: "Booking rejected",
+//         booking,
+//       });
+//     }
+
+//     // ✅ ALREADY TAKEN
+//     if (booking.technician_allocated) {
+//       return res.status(400).json({
+//         message: "This service already taken by another technician",
+//       });
+//     }
+
+//     // 🔍 Find technician
+//     let technician = await Technician.findOne({
+//       where: { userId: technician_id },
+//       include: [
+//         {
+//           model: User,
+//           as: "user",
+//           attributes: [
+//             "id",
+//             "name",
+//             "email",
+//             "mobile",
+//             "address",
+//             "username",
+//             "roleId",
+//           ],
+//         },
+//       ],
+//     });
+
+//     if (!technician) {
+//       technician = await Technician.create({
+//         userId: technician_id,
+//         status: "ACCEPT",
+//       });
+
+//       technician.user = await User.findByPk(technician_id, {
+//         attributes: [
+//           "id",
+//           "name",
+//           "email",
+//           "mobile",
+//           "address",
+//           "username",
+//           "roleId",
+//         ],
+//       });
+//     }
+
+//     // ✅ UPDATE BOOKING
+//     await booking.update({
+//       technician_allocated: true,
+//       technician_id: technician.id,
+//       work_status: 1,
+//     });
+
+//     // ✅ FETCH UPDATED WITH RELATIONS
+//     const updatedBooking = await ServiceOnBooking.findByPk(booking.id, {
+//       include: [
+//         { model: Service, as: "service" },
+//         { model: SubService, as: "subservice" },
+//         {
+//           model: User,
+//           attributes: ["id", "username", "email", "name", "mobile", "address"],
+//         },
+//         {
+//           model: Technician,
+//           as: "technician",
+//           include: [
+//             {
+//               model: User,
+//               as: "user",
+//               attributes: [
+//                 "id",
+//                 "name",
+//                 "email",
+//                 "mobile",
+//                 "address",
+//                 "username",
+//                 "roleId",
+//               ],
+//             },
+//           ],
+//           attributes: [
+//             "skill",
+//             "experience",
+//             "status",
+//             "aadharCardNo",
+//             "panCardNo",
+//             "bankName",
+//             "ifscNo",
+//             "branchName",
+//             "timeDuration",
+//             "emergencyAvailable",
+//             "techCategory",
+//           ],
+//         },
+//       ],
+//     });
+
+//     // 🔥🔥🔥 MERGE USER INTO TECHNICIAN OBJECT (IMPORTANT)
+//     const bookingData = updatedBooking.toJSON();
+
+//     if (bookingData.technician && bookingData.technician.user) {
+//       const user = bookingData.technician.user;
+
+//       bookingData.technician = {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         mobile: user.mobile,
+//         address: user.address,
+//         username: user.username,
+//         roleId: user.roleId,
+//         roleName: "Technician",
+//         technicianDetails: {
+//           skill: bookingData.technician.skill,
+//           experience: bookingData.technician.experience,
+//           status: bookingData.technician.status,
+//           aadharCardNo: bookingData.technician.aadharCardNo,
+//           panCardNo: bookingData.technician.panCardNo,
+//           bankName: bookingData.technician.bankName,
+//           ifscNo: bookingData.technician.ifscNo,
+//           branchName: bookingData.technician.branchName,
+//           timeDuration: bookingData.technician.timeDuration,
+//           emergencyAvailable: bookingData.technician.emergencyAvailable,
+//           techCategory: bookingData.technician.techCategory,
+//         },
+//       };
+
+//       bookingData.technician_id = user.id;
+//     }
+
+//     return res.status(200).json({
+//       message: "Service accepted successfully",
+//       booking: bookingData,
+//     });
+//   } catch (err) {
+//     console.error("ACCEPT BOOKING ERROR →", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
+
+
+
 exports.acceptBooking = async (req, res) => {
   try {
-    const { order_id } = req.params;
-    const { technician_id, opinion = 1 } = req.body; // default = 1 (Accept)
+    const { id } = req.params;
+    const { technician_id, opinion = 1 } = req.body;
 
+    // ✅ VALIDATION
     if (!technician_id) {
-      return res.status(400).json({ message: "technician_id is required" });
+      return res.status(400).json({
+        message: "technician_id is required",
+      });
     }
 
-    // Check booking exists
-    const booking = await ServiceOnBooking.findOne({ where: { order_id } });
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    // Opinion handling
     if (![1, 2].includes(opinion)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid opinion (1=Accept, 2=Reject)" });
+      return res.status(400).json({
+        message: "Invalid opinion (1=Accept, 2=Reject)",
+      });
     }
 
+    // ✅ FIND BOOKING
+    const booking = await ServiceOnBooking.findByPk(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found",
+      });
+    }
+
+    // 🔒 HARD LOCK (IMPORTANT)
+    // Once accepted → cannot modify
+    if (booking.technician_allocated) {
+      return res.status(400).json({
+        message:
+          "This service is already assigned and cannot be accepted or rejected again",
+      });
+    }
+
+    // ❌ REJECT FLOW (ONLY IF NOT ACCEPTED YET)
     if (opinion === 2) {
-      // REJECT
-      booking.technician_allocated = false;
-      booking.technician_id = null;
-      booking.work_status = 0; // optional: 0 = Rejected    1 = accept, 2 = reject
-      await booking.save();
+      await booking.update({
+        technician_allocated: false,
+        technician_id: null,
+        work_status: 0,
+      });
 
       return res.status(200).json({
-        message: "Booking rejected by technician",
+        message: "Booking rejected",
         booking,
       });
     }
 
-    // ACCEPT flow
-    if (booking.technician_allocated) {
-      return res
-        .status(400)
-        .json({ message: "Booking already accepted by a technician" });
-    }
-
-    // Find Technician by userId
+    // 🔍 FIND TECHNICIAN
     let technician = await Technician.findOne({
       where: { userId: technician_id },
       include: [
@@ -724,8 +1206,8 @@ exports.acceptBooking = async (req, res) => {
       ],
     });
 
+    // ✅ CREATE TECHNICIAN IF NOT EXISTS
     if (!technician) {
-      // Auto-create technician row if it doesn't exist
       technician = await Technician.create({
         userId: technician_id,
         status: "ACCEPT",
@@ -744,14 +1226,14 @@ exports.acceptBooking = async (req, res) => {
       });
     }
 
-    // Update booking
-    booking.technician_allocated = true;
-    booking.technician_id = technician.id; // store Technician PK (FK)
-    booking.work_status = 1; // 1 = Pending
-    booking.work_status_code = null;
-    await booking.save();
+    // ✅ ACCEPT BOOKING
+    await booking.update({
+      technician_allocated: true,
+      technician_id: technician.id,
+      work_status: 1, // Pending
+    });
 
-    // Fetch updated booking with associations
+    // ✅ FETCH UPDATED DATA
     const updatedBooking = await ServiceOnBooking.findByPk(booking.id, {
       include: [
         { model: Service, as: "service" },
@@ -795,10 +1277,12 @@ exports.acceptBooking = async (req, res) => {
       ],
     });
 
-    // Merge user info into technician object
+    // 🔥 MERGE USER INTO TECHNICIAN
     const bookingData = updatedBooking.toJSON();
+
     if (bookingData.technician && bookingData.technician.user) {
       const user = bookingData.technician.user;
+
       bookingData.technician = {
         id: user.id,
         name: user.name,
@@ -822,26 +1306,159 @@ exports.acceptBooking = async (req, res) => {
           techCategory: bookingData.technician.techCategory,
         },
       };
+
       bookingData.technician_id = user.id;
     }
 
-    res.status(200).json({
-      message: "Booking accepted by technician",
+    // ✅ FINAL RESPONSE
+    return res.status(200).json({
+      message: "Service accepted successfully",
       booking: bookingData,
     });
   } catch (err) {
     console.error("ACCEPT BOOKING ERROR →", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
 
 
-
 // update work status
+// exports.updateWorkStatus = async (req, res) => {
+//   try {
+//     const { order_id } = req.params;
+//     const { technician_id, work_status, notes } = req.body;
+
+//     if (!technician_id || !work_status) {
+//       return res.status(400).json({
+//         message: "technician_id and work_status are required",
+//       });
+//     }
+
+//     if (![1, 3].includes(Number(work_status))) {
+//       return res.status(400).json({
+//         message: "Invalid work_status (1 = Pending, 3 = Completed)",
+//       });
+//     }
+
+//     const booking = await ServiceOnBooking.findOne({ where: { order_id } });
+//     if (!booking) {
+//       return res.status(404).json({ message: "Booking not found" });
+//     }
+
+//     const technician = await Technician.findOne({
+//       where: { userId: technician_id },
+//     });
+//     if (!technician) {
+//       return res.status(404).json({ message: "Technician not found" });
+//     }
+
+//     // 🔹 Generate work status code only once
+//     let workStatusCode = booking.work_status_code;
+//     if (Number(work_status) === 3 && !workStatusCode) {
+//       const count = await ServiceOnBooking.count({
+//         where: { work_status: 3 },
+//       });
+//       workStatusCode = `BDW${booking.order_id.replace("BD", "")}-${String(
+//         count + 1
+//       ).padStart(2, "0")}`;
+//     }
+
+//     // ✅ CORRECT IMAGE HANDLING (USE image FIELD)
+//     // const image = req.file
+//     //   ? `/uploads/booking-services/${req.file.filename}`
+//     //   : booking.image;
+
+//     const image = req.file?.path; // Cloudinary URL
+
+//     await booking.update({
+//       work_status,
+//       work_status_code: workStatusCode,
+//       work_notes: notes || booking.work_notes,
+//       image, // ✅ FIXED
+//     });
+
+//     const updatedBooking = await ServiceOnBooking.findByPk(booking.id, {
+//       include: [
+//         { model: Service, as: "service" },
+//         { model: SubService, as: "subservice" },
+//         {
+//           model: User,
+//           attributes: ["id", "name", "email", "mobile", "address"],
+//         },
+//         {
+//           model: Technician,
+//           as: "technician",
+//           include: [
+//             {
+//               model: User,
+//               as: "user",
+//               attributes: [
+//                 "id",
+//                 "name",
+//                 "email",
+//                 "mobile",
+//                 "address",
+//                 "username",
+//                 "roleId",
+//               ],
+//             },
+//           ],
+//         },
+//       ],
+//     });
+
+//     const data = updatedBooking.toJSON();
+//     const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+//     // Normalize technician
+//     if (data.technician?.user) {
+//       const u = data.technician.user;
+//       data.technician = {
+//         id: u.id,
+//         name: u.name,
+//         email: u.email,
+//         mobile: u.mobile,
+//         address: u.address,
+//         username: u.username,
+//         roleId: u.roleId,
+//         roleName: "Technician",
+//       };
+//       data.technician_id = u.id;
+//     }
+
+//     // ✅ FULL IMAGE URL
+//     data.image = data.image ? baseUrl + data.image : null;
+
+//     // Attach service/subservice images
+//     if (data.service?.image) {
+//       data.service.image = baseUrl + "/uploads/services/" + data.service.image;
+//     }
+//     if (data.subservice?.image) {
+//       data.subservice.image = baseUrl + data.subservice.image;
+//     }
+
+//     data.work_status_label =
+//       Number(work_status) === 1 ? "Pending" : "Completed";
+
+//     return res.status(200).json({
+//       message: "Work status updated successfully",
+//       booking: data,
+//     });
+//   } catch (err) {
+//     console.error("UPDATE WORK STATUS ERROR →", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
+
+
 exports.updateWorkStatus = async (req, res) => {
   try {
-    const { order_id } = req.params;
+    const { id } = req.params; // ✅ FIXED
     const { technician_id, work_status, notes } = req.body;
 
     if (!technician_id || !work_status) {
@@ -856,7 +1473,9 @@ exports.updateWorkStatus = async (req, res) => {
       });
     }
 
-    const booking = await ServiceOnBooking.findOne({ where: { order_id } });
+    // ✅ FIXED
+    const booking = await ServiceOnBooking.findByPk(id);
+
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
@@ -864,36 +1483,33 @@ exports.updateWorkStatus = async (req, res) => {
     const technician = await Technician.findOne({
       where: { userId: technician_id },
     });
+
     if (!technician) {
       return res.status(404).json({ message: "Technician not found" });
     }
 
-    // 🔹 Generate work status code only once
     let workStatusCode = booking.work_status_code;
+
     if (Number(work_status) === 3 && !workStatusCode) {
       const count = await ServiceOnBooking.count({
         where: { work_status: 3 },
       });
+
       workStatusCode = `BDW${booking.order_id.replace("BD", "")}-${String(
         count + 1
       ).padStart(2, "0")}`;
     }
 
-    // ✅ CORRECT IMAGE HANDLING (USE image FIELD)
-    // const image = req.file
-    //   ? `/uploads/booking-services/${req.file.filename}`
-    //   : booking.image;
-
-    const image = req.file?.path; // Cloudinary URL
+    const image = req.file?.path;
 
     await booking.update({
       work_status,
       work_status_code: workStatusCode,
       work_notes: notes || booking.work_notes,
-      image, // ✅ FIXED
+      image,
     });
 
-    const updatedBooking = await ServiceOnBooking.findByPk(booking.id, {
+    const updatedBooking = await ServiceOnBooking.findByPk(id, {
       include: [
         { model: Service, as: "service" },
         { model: SubService, as: "subservice" },
@@ -904,21 +1520,7 @@ exports.updateWorkStatus = async (req, res) => {
         {
           model: Technician,
           as: "technician",
-          include: [
-            {
-              model: User,
-              as: "user",
-              attributes: [
-                "id",
-                "name",
-                "email",
-                "mobile",
-                "address",
-                "username",
-                "roleId",
-              ],
-            },
-          ],
+          include: [{ model: User, as: "user" }],
         },
       ],
     });
@@ -926,9 +1528,9 @@ exports.updateWorkStatus = async (req, res) => {
     const data = updatedBooking.toJSON();
     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    // Normalize technician
     if (data.technician?.user) {
       const u = data.technician.user;
+
       data.technician = {
         id: u.id,
         name: u.name,
@@ -939,16 +1541,16 @@ exports.updateWorkStatus = async (req, res) => {
         roleId: u.roleId,
         roleName: "Technician",
       };
+
       data.technician_id = u.id;
     }
 
-    // ✅ FULL IMAGE URL
     data.image = data.image ? baseUrl + data.image : null;
 
-    // Attach service/subservice images
     if (data.service?.image) {
       data.service.image = baseUrl + "/uploads/services/" + data.service.image;
     }
+
     if (data.subservice?.image) {
       data.subservice.image = baseUrl + data.subservice.image;
     }

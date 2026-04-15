@@ -207,19 +207,74 @@ router.get(
 
 
 
+// /**
+//  * @swagger
+//  * /service-on-booking/accept/{order_id}:
+//  *   post:
+//  *     summary: Technician accepts or rejects a booking
+//  *     tags: [ServiceOnBooking]
+//  *     parameters:
+//  *       - in: path
+//  *         name: order_id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *         description: Order ID of the booking
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             required:
+//  *               - technician_id
+//  *             properties:
+//  *               technician_id:
+//  *                 type: integer
+//  *                 example: 2
+//  *                 description: User ID of the technician
+//  *               opinion:
+//  *                 type: integer
+//  *                 enum: [1, 2]
+//  *                 example: 1
+//  *                 description: |
+//  *                   Technician opinion on the booking:  
+//  *                   1 = Accept  
+//  *                   2 = Reject
+//  *     responses:
+//  *       200:
+//  *         description: Booking accepted or rejected successfully
+//  *       400:
+//  *         description: Validation error or invalid opinion
+//  *       404:
+//  *         description: Booking or Technician not found
+//  *       500:
+//  *         description: Server error
+//  */
+// router.post("/accept/:order_id", controller.acceptBooking);
+
+
+
+
+
+
+
 /**
  * @swagger
- * /service-on-booking/accept/{order_id}:
+ * /service-on-booking/accept/{id}:
  *   post:
- *     summary: Technician accepts or rejects a booking
+ *     summary: Technician accepts or rejects a booking by booking ID
  *     tags: [ServiceOnBooking]
+ *
  *     parameters:
  *       - in: path
- *         name: order_id
+ *         name: id
  *         required: true
  *         schema:
- *           type: string
- *         description: Order ID of the booking
+ *           type: integer
+ *           example: 473
+ *         description: Database primary key of the booking
+ *
  *     requestBody:
  *       required: true
  *       content:
@@ -231,45 +286,110 @@ router.get(
  *             properties:
  *               technician_id:
  *                 type: integer
- *                 example: 2
- *                 description: User ID of the technician
+ *                 example: 14
+ *                 description: User ID of technician
+ *
  *               opinion:
  *                 type: integer
  *                 enum: [1, 2]
  *                 example: 1
  *                 description: |
- *                   Technician opinion on the booking:  
- *                   1 = Accept  
- *                   2 = Reject
+ *                   1 = Accept booking  
+ *                   2 = Reject booking
+ *
  *     responses:
  *       200:
- *         description: Booking accepted or rejected successfully
+ *         description: Booking processed successfully
  *       400:
- *         description: Validation error or invalid opinion
+ *         description: Invalid request
  *       404:
- *         description: Booking or Technician not found
+ *         description: Booking not found
  *       500:
  *         description: Server error
  */
-router.post("/accept/:order_id", controller.acceptBooking);
+router.post("/accept/:id", controller.acceptBooking);
+
+
+
+
+// /**
+//  * @swagger
+//  * /service-on-booking/work-status/{order_id}:
+//  *   post:
+//  *     summary: Update work status (Pending / Completed)
+//  *     description: Technician updates work status with optional notes and image
+//  *     tags: [ServiceOnBooking]
+//  *     parameters:
+//  *       - in: path
+//  *         name: order_id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *         description: Booking Order ID
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         multipart/form-data:
+//  *           schema:
+//  *             type: object
+//  *             required:
+//  *               - technician_id
+//  *               - work_status
+//  *             properties:
+//  *               technician_id:
+//  *                 type: integer
+//  *                 example: 15
+//  *               work_status:
+//  *                 type: integer
+//  *                 enum: [1, 3]
+//  *                 example: 3
+//  *                 description: |
+//  *                   1 = Pending  
+//  *                   3 = Completed
+//  *               notes:
+//  *                 type: string
+//  *                 example: Job completed successfully
+//  *               image:
+//  *                 type: string
+//  *                 format: binary
+//  *                 description: Work completion image
+//  *     responses:
+//  *       200:
+//  *         description: Work status updated successfully
+//  *       400:
+//  *         description: Invalid request
+//  *       404:
+//  *         description: Booking not found
+//  *       500:
+//  *         description: Server error
+//  */
+// router.post(
+//   "/work-status/:order_id",
+//   upload.single("image"),
+//   controller.updateWorkStatus
+// );
+
 
 
 
 
 /**
  * @swagger
- * /service-on-booking/work-status/{order_id}:
+ * /service-on-booking/work-status/{id}:
  *   post:
  *     summary: Update work status (Pending / Completed)
  *     description: Technician updates work status with optional notes and image
  *     tags: [ServiceOnBooking]
+ *
  *     parameters:
  *       - in: path
- *         name: order_id
+ *         name: id
  *         required: true
  *         schema:
- *           type: string
- *         description: Booking Order ID
+ *           type: integer
+ *           example: 473
+ *         description: Booking primary key ID
+ *
  *     requestBody:
  *       required: true
  *       content:
@@ -283,6 +403,7 @@ router.post("/accept/:order_id", controller.acceptBooking);
  *               technician_id:
  *                 type: integer
  *                 example: 15
+ *
  *               work_status:
  *                 type: integer
  *                 enum: [1, 3]
@@ -290,13 +411,15 @@ router.post("/accept/:order_id", controller.acceptBooking);
  *                 description: |
  *                   1 = Pending  
  *                   3 = Completed
+ *
  *               notes:
  *                 type: string
  *                 example: Job completed successfully
+ *
  *               image:
  *                 type: string
  *                 format: binary
- *                 description: Work completion image
+ *
  *     responses:
  *       200:
  *         description: Work status updated successfully
@@ -308,11 +431,10 @@ router.post("/accept/:order_id", controller.acceptBooking);
  *         description: Server error
  */
 router.post(
-  "/work-status/:order_id",
+  "/work-status/:id",
   upload.single("image"),
   controller.updateWorkStatus
 );
-
 
 
 module.exports = router;

@@ -209,9 +209,23 @@ router.post("/initiate", async (req, res) => {
     );
 
     // ✅ JUSPAY
+    // const juspayResponse = await juspay.order.create({
+    //   order_id,
+    //   amount: finalAmount.toFixed(2),
+    //   currency: "INR",
+    //   customer_id: String(customerId),
+    //   customer_email: email,
+    //   customer_phone: mobile,
+    //   return_url: `${BASE_URL}/api/payment/juspay/redirect`,
+    // });
+
+
     const juspayResponse = await juspay.order.create({
       order_id,
-      amount: finalAmount.toFixed(2),
+
+      // ✅ CONVERT TO PAISE (VERY IMPORTANT)
+      amount: Math.round(finalAmount * 100),
+
       currency: "INR",
       customer_id: String(customerId),
       customer_email: email,
